@@ -11,12 +11,7 @@
 
 ## 使用方法
 
-1.  **进入项目目录**
-    ```bash
-    cd app
-    ```
-
-2.  **安装依赖**
+1.  **安装依赖**
     ```bash
     npm install
     ```
@@ -24,7 +19,6 @@
 3.  **配置联系信息**
     将 `src/config.example.js` 复制一份并重命名为 `src/config.js`，然后填入真实的联系方式。
     ```bash
-    # 在 app 目录下执行
     cp src/config.example.js src/config.js
     ```
 
