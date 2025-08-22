@@ -1,24 +1,19 @@
 <template>
-  <view class="minimal-tabbar">
-    <view class="tabbar-container">
-
-      <!-- 左侧毛玻璃渐变过渡 -->
-      <view class="glass-fade-left"></view>
-      <!-- 右侧毛玻璃渐变过渡 -->
-      <view class="glass-fade-right"></view>
-      
-      <view class="tab-items">
+  <view class="linear-tabbar">
+    <view class="tabbar-main">
+      <!-- 内容区域 -->
+      <view class="tab-content">
         <view 
           v-for="(item, index) in tabs" 
           :key="index"
           class="tab-item"
-          :class="{ 'tab-active': current === index }"
+          :class="{ 'active': current === index }"
           @tap="switchTab(index)"
         >
-          <view class="tab-icon">
-            <text class="icon-symbol">{{ item.icon }}</text>
+          <view class="icon-wrapper">
+            <text class="tab-icon">{{ item.icon }}</text>
           </view>
-          <text class="tab-text">{{ item.text }}</text>
+          <text class="tab-label">{{ item.text }}</text>
         </view>
       </view>
     </view>
@@ -64,13 +59,19 @@ export default {
       })
       
       this.navigating = true
-      this.current = index // 立即更新当前选中状态
       const target = this.tabs[index].pagePath
+      
+      // 延迟更新状态，避免闪烁
+      setTimeout(() => {
+        this.current = index
+      }, 50)
       
       uni.redirectTo({
         url: target,
         complete: () => {
           this.navigating = false
+          // 确保状态正确
+          this.updateCurrent()
         }
       })
     },
@@ -100,181 +101,132 @@ export default {
   
   // 监听页面显示事件
   onShow() {
-    this.updateCurrent()
+    // 延迟更新，避免页面切换时闪烁
+    setTimeout(() => {
+      this.updateCurrent()
+    }, 100)
   }
 }
 </script>
 
 <style scoped>
-/* 极简导航栏样式 */
-.minimal-tabbar {
+/* Linear 风格导航栏 */
+.linear-tabbar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1000;
+  padding: 0 16rpx;
 }
 
-.tabbar-container {
-  /* 液态毛玻璃透明背景 */
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(25rpx) saturate(180%);
-  -webkit-backdrop-filter: blur(25rpx) saturate(180%);
-  
-  /* 更圆润的圆角设计 */
-  border-radius: 50rpx 50rpx 0 0;
-  
-  /* 只保留顶部边框 */
-  border-top: 1rpx solid rgba(0, 0, 0, 0.12);
-  
+.tabbar-main {
   position: relative;
-  margin: 0 15rpx;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 70rpx 70rpx 0 0;
+  overflow: hidden;
   
-  padding: 20rpx 0 calc(15rpx + env(safe-area-inset-bottom));
+  /* 清晰的灰色边框 */
+  border: 1rpx solid rgba(0, 0, 0, 0.2);
+  border-bottom: none;
   
-  /* 阴影效果 */
+  /* 精细阴影 */
   box-shadow: 
-    0 -12rpx 40rpx rgba(0, 0, 0, 0.08),
-    0 -4rpx 16rpx rgba(0, 0, 0, 0.04),
-    0 -1rpx 4rpx rgba(0, 0, 0, 0.02),
-    inset 0 1rpx 0 rgba(255, 255, 255, 0.4);
+    0 -8rpx 32rpx rgba(0, 0, 0, 0.06),
+    0 -2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
-/* 顶部边框渐隐效果 */
-.tabbar-container::before {
+/* 主毛玻璃层 - 中心区域完整效果 */
+/* 毛玻璃效果 - 单层优化 */
+.tabbar-main::before {
   content: '';
   position: absolute;
-  top: -1rpx;
-  left: 20rpx;
-  right: 20rpx;
-  height: 1rpx;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(0, 0, 0, 0.12) 25%,
-    rgba(0, 0, 0, 0.12) 75%,
-    transparent 100%
-  );
-  border-radius: 1rpx;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  backdrop-filter: blur(12rpx) saturate(150%);
+  -webkit-backdrop-filter: blur(12rpx) saturate(150%);
+  border-radius: 70rpx 70rpx 0 0;
   pointer-events: none;
 }
 
-/* 左侧毛玻璃渐变过渡 */
-.glass-fade-left {
+/* 边框容器 - 使用 border-image 实现完美渐变边框 */
+.border-container {
   position: absolute;
   top: 0;
+  left: 0;
+  right: 0;
   bottom: 0;
-  left: -25rpx;
-  width: 25rpx;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.3) 40%,
-    rgba(255, 255, 255, 0.7) 80%,
-    rgba(255, 255, 255, 0.9) 100%
-  );
-  backdrop-filter: blur(15rpx) saturate(150%);
-  -webkit-backdrop-filter: blur(15rpx) saturate(150%);
-  border-radius: 50rpx 0 0 0;
   pointer-events: none;
+  border-radius: 60rpx 60rpx 0 0;
+  border: 1rpx solid transparent;
+  border-bottom: none;
+  border-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1),
+    transparent 50%
+  ) 1;
+  z-index: 10;
 }
 
-/* 右侧毛玻璃渐变过渡 */
-.glass-fade-right {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: -25rpx;
-  width: 25rpx;
-  background: linear-gradient(
-    270deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.3) 40%,
-    rgba(255, 255, 255, 0.7) 80%,
-    rgba(255, 255, 255, 0.9) 100%
-  );
-  backdrop-filter: blur(15rpx) saturate(150%);
-  -webkit-backdrop-filter: blur(15rpx) saturate(150%);
-  border-radius: 0 50rpx 0 0;
-  pointer-events: none;
-}
-
-
-
-
-
-
-
-.tab-items {
+/* 内容区域 */
+.tab-content {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  max-width: 750rpx;
-  margin: 0 auto;
+  padding: 14rpx 0 calc(12rpx + env(safe-area-inset-bottom));
+  position: relative;
+  z-index: 1;
 }
 
+/* 标签项 */
 .tab-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12rpx 20rpx 8rpx 20rpx;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 8rpx 16rpx 6rpx 16rpx;
+  min-width: 80rpx;
 }
 
-.tab-icon {
+/* 图标容器 */
+.icon-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 6rpx;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.icon-symbol {
-  font-size: 36rpx;
+/* 图标样式 */
+.tab-icon {
+  font-size: 40rpx;
   line-height: 1;
-  color: #999999;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: center;
-  /* 强制灰色显示，避免 emoji 彩色 */
-  -webkit-text-fill-color: #999999;
-  text-rendering: optimizeLegibility;
+  color: #8E8E93;
+  -webkit-text-fill-color: #8E8E93;
   font-variant-emoji: text;
+  text-rendering: optimizeLegibility;
 }
 
-.tab-text {
-  font-size: 22rpx;
-  color: #999999;
+/* 标签文字 */
+.tab-label {
+  font-size: 20rpx;
+  color: #8E8E93;
   font-weight: 400;
   line-height: 1;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
 }
 
-/* 选中状态 */
-.tab-active .icon-symbol {
+/* 活跃状态 */
+.tab-item.active .tab-icon {
   color: #000000;
-  font-size: 42rpx;
-  transform: scale(1.1);
-  /* 强制黑色显示，避免 emoji 彩色 */
   -webkit-text-fill-color: #000000;
+  font-size: 46rpx;
 }
 
-.tab-active .tab-text {
+.tab-item.active .tab-label {
   color: #000000;
   font-weight: 500;
-  font-size: 24rpx;
+  font-size: 22rpx;
 }
-
-/* 移除图标切换动画，避免抖动 */
-
-/* 悬停效果 */
-.tab-item:active {
-  transform: scale(0.95);
-}
-
-.tab-item:active .icon-symbol {
-  transform: scale(0.9);
-}
-
-/* 移除悬浮动画，避免影响图标稳定性 */
 </style>

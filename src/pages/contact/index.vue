@@ -78,7 +78,7 @@
         <view class="schedule-content">
           <view class="schedule-item">
             <text class="schedule-day">周一至周五</text>
-            <text class="schedule-time">8:30 - 20:00</text>
+            <text class="schedule-time">8:30 - 19:30</text>
           </view>
           <view class="schedule-item">
             <text class="schedule-day">周六</text>
