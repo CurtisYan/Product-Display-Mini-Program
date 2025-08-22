@@ -90,8 +90,8 @@
   </view>
 
   <!-- Linear 风格二维码弹窗 -->
-  <view v-if="showQRModal" class="linear-modal" @tap="hideQRCode">
-    <view class="modal-backdrop"></view>
+  <view v-if="showQRModal" class="modal-backdrop" @tap="hideQRCode"></view>
+  <view v-if="showQRModal" class="modal-container">
     <view class="modal-content" @tap.stop>
       <view class="modal-header">
         <text class="modal-title">添加微信</text>
@@ -461,7 +461,19 @@ export default {
 }
 
 /* Linear 风格弹窗 */
-.linear-modal {
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8rpx);
+  z-index: 999;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modal-container {
   position: fixed;
   top: 0;
   left: 0;
@@ -471,17 +483,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: modalFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.modal-backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8rpx);
+  pointer-events: none;
 }
 
 .modal-content {
@@ -491,15 +493,16 @@ export default {
   max-width: 90%;
   position: relative;
   box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.3);
-  animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
 }
 
-@keyframes modalFadeIn {
+@keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes modalSlideIn {
+@keyframes slideIn {
   from {
     opacity: 0;
     transform: scale(0.95) translateY(20rpx);

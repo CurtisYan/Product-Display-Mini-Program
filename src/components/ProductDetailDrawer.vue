@@ -1,31 +1,48 @@
 <template>
-  <view>
-    <view v-if="modelValue" class="mask" @tap="close" />
-    <view ref="drawer" class="drawer" :class="{ show: modelValue }" 
-          @touchstart="onTouchStart" 
-          @touchmove="onTouchMove" 
-          @touchend="onTouchEnd">
-      <view class="handle" @tap="close"></view>
-      <scroll-view scroll-y class="sheet" @scroll="onScroll" :scroll-top="scrollTop">
-        <view class="header">
-          <text class="title">{{ product?.name || '产品详情' }}</text>
-          <text class="sub" v-if="product?.sub">{{ product.sub }}</text>
+  <view v-if="visible" class="tg-container" @touchmove.stop.prevent="onContainerTouchMove">
+    <!-- 遮罩层 -->
+    <view class="tg-mask" :style="{ opacity: maskOpacity }" @tap="close"></view>
+
+    <!-- 底部弹出层（Telegram风格：仅用transform/opacity动画） -->
+    <view class="tg-sheet" :style="{ transform: `translate3d(0, ${translateY}px, 0)`, transition: transition, height: sheetHeight + 'px' }">
+      <!-- 顶部拖拽区（整个区域支持手势） -->
+      <view class="tg-drag-zone" @touchstart="onDragStart" @touchmove.stop="onDragMove" @touchend="onDragEnd">
+        <view class="tg-handle"></view>
+        <view class="tg-header">
+          <view class="tg-title-area">
+            <text class="tg-title">{{ product?.name || '产品详情' }}</text>
+            <text class="tg-sub" v-if="product?.sub">{{ product.sub }}</text>
+          </view>
+          <view class="tg-actions">
+            <view class="tg-action-btn" data-nodrag="1" @tap.stop="onShare"><text class="tg-action-text">分享</text></view>
+            <view class="tg-action-btn" :class="{ active: favoriteActive }" data-nodrag="1" @tap.stop="onFavorite"><text class="tg-action-text">{{ favoriteActive ? '已收藏' : '收藏' }}</text></view>
+          </view>
         </view>
-        <scroll-view class="gallery" scroll-x>
-          <image v-for="(img,idx) in images" :key="idx" class="g-img" :src="img" mode="aspectFill" @tap="preview(idx)" />
-        </scroll-view>
-        <view class="desc">
-          <slot>
-            <text class="p">这里是产品文字说明示例。支持材质、规格、用途、工艺等信息的分段展示。</text>
-          </slot>
+      </view>
+
+      <!-- 内容区：独立滚动，不与拖拽冲突 -->
+      <scroll-view
+        class="tg-content"
+        scroll-y
+        :style="{ maxHeight: maxHeight + 'px' }"
+        enhanced
+        show-scrollbar="false"
+        @scroll="onScroll"
+      >
+        <!-- 描述信息放到图片之上 -->
+        <view class="tg-desc" v-if="product?.description || product?.desc">
+          <text class="tg-desc-text">{{ product.description || product.desc }}</text>
         </view>
-        <view class="cta">
-          <button class="btn primary" @tap="shareProduct">分享转发</button>
-          <button class="btn favorite" @tap="addToFavorite">
-            <text class="favorite-icon">♥</text>
-            <text>添加收藏</text>
-          </button>
+
+        <!-- 图片列表：垂直依次展示，多图纵向排列 -->
+        <view v-if="displayImages.length" class="tg-image-list">
+          <image v-for="(img, idx) in displayImages" :key="idx" class="tg-image" :src="img" mode="aspectFill" @tap="preview(idx)" />
         </view>
+
+        <!-- 插槽拓展 -->
+        <slot />
+
+        <view class="tg-safe" />
       </scroll-view>
     </view>
   </view>
@@ -34,136 +51,432 @@
 <script>
 export default {
   name: 'ProductDetailDrawer',
+  emits: ['update:modelValue', 'favorite', 'share'],
   props: {
     modelValue: { type: Boolean, default: false },
     product: { type: Object, default: null },
     images: { type: Array, default: () => [] }
   },
-  emits: ['update:modelValue', 'share', 'favorite'],
   data() {
     return {
-      // 触摸相关
+      visible: false,
+      transition: 'none',
+      translateY: 1000,
+      maskOpacity: 0,
+      height: 0,
+      touching: false,
       startY: 0,
-      currentY: 0,
-      isDragging: false,
-      // 滚动相关
-      scrollTop: 0,
+      startT: 0,
+      maxHeight: 0,
       isAtTop: true,
-      // 动画相关
-      drawerStyle: ''
+      // 目标高度相关（支持折叠/展开两个高度）
+      sheetHeight: 0,
+      collapsedRatio: 0.8,
+      expandedRatio: 0.96,
+      collapsedHeight: 0,
+      expandedHeight: 0,
+      expanded: false,
+      chromePx: 88,
+      safeBottom: 0,
+      // 历史管理
+      pushed: false,
+      boundPopstate: null,
+      popAttached: false,
+      favoriteActive: false,
+      // 手势相关
+      isDragging: false,
+      dragStartY: 0,
+      dragStartTime: 0,
+      lastY: 0,
+      lastTime: 0,
+      velocity: 0,
+      dragActivated: false,
+      totalDragDistance: 0
+    }
+  },
+  computed: {
+    displayImages() {
+      if (this.images && this.images.length) return this.images
+      if (this.product?.images && this.product.images.length) return this.product.images
+      return []
+    }
+  },
+  watch: {
+    modelValue: {
+      immediate: true,
+      handler(val) {
+        if (val) this.open()
+        else this.close(false, true)
+      }
+    },
+    product: {
+      immediate: false,
+      handler() {
+        this.determineFavoriteState()
+      }
+    }
+  },
+  mounted() {
+    this.computeMaxHeight()
+    if (uni && uni.onWindowResize) {
+      uni.onWindowResize(this.computeMaxHeight)
+    }
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      this.boundPopstate = (e) => this.onPopstate(e)
+      window.addEventListener('popstate', this.boundPopstate)
+      this.popAttached = true
+    }
+  },
+  beforeUnmount() {
+    if (uni && uni.offWindowResize) {
+      uni.offWindowResize(this.computeMaxHeight)
+    }
+    if (typeof window !== 'undefined' && this.boundPopstate) {
+      window.removeEventListener('popstate', this.boundPopstate)
+      this.boundPopstate = null
+      this.popAttached = false
+      this.pushed = false
     }
   },
   methods: {
-    close() { this.$emit('update:modelValue', false) },
-    preview(idx) {
-      if (!this.images || !this.images.length) return
-      uni.previewImage({ current: idx, urls: this.images })
-    },
-    shareProduct() {
-      this.$emit('share', this.product)
-      // 微信小程序分享功能
-      uni.showShareMenu({
-        withShareTicket: true,
-        success: () => {
-          uni.showToast({
-            title: '分享成功',
-            icon: 'success'
-          })
-        }
-      })
-    },
-    addToFavorite() {
-      this.$emit('favorite', this.product)
-      uni.showToast({
-        title: '已收藏进星星内',
-        icon: 'success',
-        duration: 3000
-      })
-    },
-    // 滚动监听，检测是否在顶部
-    onScroll(e) {
-      this.scrollTop = e.detail.scrollTop
-      this.isAtTop = e.detail.scrollTop <= 5 // 允许5px的误差
-    },
-    // 触摸开始
-    onTouchStart(e) {
-      if (!this.isAtTop) return // 不在顶部时不处理
-      this.startY = e.touches[0].clientY
-      this.isDragging = false
-    },
-    // 触摸移加
-    onTouchMove(e) {
-      if (!this.isAtTop) return // 不在顶部时不处理
-      
-      this.currentY = e.touches[0].clientY
-      const deltaY = this.currentY - this.startY
-      
-      // 只处理向下滑动
-      if (deltaY > 0) {
-        this.isDragging = true
-        // 阻止默认滚动行为
-        e.preventDefault && e.preventDefault()
-        
-        // 使用uni-app的方式获取DOM元素
-        const query = uni.createSelectorQuery().in(this)
-        query.select('.drawer').boundingClientRect(rect => {
-          if (rect) {
-            // 计算进度和变换
-            const progress = Math.min(deltaY / 200, 1)
-            this.drawerTransform = `translateY(${deltaY}px)`
-            this.drawerOpacity = 1 - progress * 0.3
-          }
-        }).exec()
+    onPopstate(e) {
+      if (this.visible) {
+        this.close(true, true)
       }
     },
-    // 触摸结束
-    onTouchEnd(e) {
-      if (!this.isAtTop || !this.isDragging) {
-        this.resetDrawerPosition()
+    computeMaxHeight() {
+      try {
+        const sys = uni.getSystemInfoSync()
+        const safeBottom = sys.safeAreaInsets?.bottom || 0
+        const winH = sys.windowHeight || 800
+        this.safeBottom = safeBottom
+        this.collapsedHeight = Math.round(winH * this.collapsedRatio)
+        this.expandedHeight = Math.round(winH * this.expandedRatio)
+        this.sheetHeight = this.expanded ? this.expandedHeight : this.collapsedHeight
+        // 内容区最大高度 = 目标高度 - 顶部拖拽/标题区域 - 底部安全区
+        this.maxHeight = Math.max(200, this.sheetHeight - this.chromePx - safeBottom)
+      } catch (e) {
+        this.sheetHeight = 700
+        this.collapsedHeight = 560
+        this.expandedHeight = 860
+        this.maxHeight = 600
+      }
+    },
+    measureHeight(cb) {
+      // 直接使用计算的目标高度，避免受图片加载或布局抖动影响
+      this.height = this.sheetHeight || 800
+      cb && cb()
+    },
+    open() {
+      if (this.visible) return
+      this.visible = true
+      // 锁定页面滚动
+      this.lockPageScroll()
+      // 恢复为折叠态并重新计算布局
+      this.expanded = false
+      this.computeMaxHeight()
+      // 计算当前商品是否已被收藏，用于按钮状态显示
+      this.determineFavoriteState()
+      if (typeof window !== 'undefined' && window.history && !this.pushed) {
+        try { window.history.pushState({ sheet: 'product-detail' }, '') } catch (e) {}
+        this.pushed = true
+      }
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.measureHeight(() => {
+            this.transition = 'none'
+            this.translateY = this.height
+            this.maskOpacity = 0
+            // 下一帧启动入场动画
+            setTimeout(() => {
+              this.transition = 'transform 0.28s cubic-bezier(.21,1,.34,1)'
+              this.translateY = 0
+              this.maskOpacity = 1
+            }, 16)
+          })
+        }, 0)
+      })
+    },
+    close(emitUpdate = true, fromHistory = false) {
+      if (!this.visible) {
+        if (emitUpdate && this.modelValue) this.$emit('update:modelValue', false)
+        return
+      }
+      if (typeof window !== 'undefined' && this.pushed && !fromHistory) {
+        try { window.history.back() } catch (e) {}
+        return
+      }
+      this.transition = 'transform 0.22s cubic-bezier(.2,.6,.2,1)'
+      this.translateY = this.height || 800
+      this.maskOpacity = 0
+      setTimeout(() => {
+        this.visible = false
+        this.pushed = false
+        // 恢复页面滚动
+        this.unlockPageScroll()
+        if (emitUpdate && this.modelValue) this.$emit('update:modelValue', false)
+      }, 220)
+    },
+    // 内容滚动，记录是否在顶部（用于与旧逻辑兼容）
+    onScroll(e) {
+      this.isAtTop = (e?.detail?.scrollTop || 0) <= 5
+    },
+    // 统一的拖拽处理
+    onDragStart(e) {
+      // 检查是否点击在按钮上
+      if (e.target && e.target.dataset && e.target.dataset.nodrag) return
+      
+      this.isDragging = true
+      this.dragActivated = false // 还未真正激活拖拽
+      this.totalDragDistance = 0
+      this.dragStartY = e.touches[0].clientY
+      this.dragStartTime = Date.now()
+      this.lastY = this.dragStartY
+      this.lastTime = this.dragStartTime
+      this.velocity = 0
+      this.startY = this.dragStartY
+      this.startT = this.dragStartTime
+    },
+    
+    onDragMove(e) {
+      if (!this.isDragging) return
+      
+      const currentY = e.touches[0].clientY
+      const currentTime = Date.now()
+      const deltaY = currentY - this.dragStartY
+      
+      // 累积移动距离
+      this.totalDragDistance = Math.abs(deltaY)
+      
+      // 只有移动超过10px才真正激活拖拽，避免点击误触
+      if (!this.dragActivated && this.totalDragDistance < 10) {
         return
       }
       
-      const deltaY = this.currentY - this.startY
-      const threshold = 100 // 关闭阈值：100px
+      // 激活拖拽
+      if (!this.dragActivated) {
+        this.dragActivated = true
+        this.transition = 'none'
+      }
       
-      if (deltaY > threshold) {
-        // 超过阈值，关闭弹窗
-        this.close()
+      e.preventDefault && e.preventDefault()
+      
+      // 计算瞬时速度
+      const dt = currentTime - this.lastTime
+      if (dt > 0) {
+        this.velocity = (currentY - this.lastY) / dt * 1000
+      }
+      this.lastY = currentY
+      this.lastTime = currentTime
+      
+      if (deltaY < 0) {
+        // 向上拖拽：增加高度
+        const absdy = Math.abs(deltaY)
+        const base = this.expanded ? this.expandedHeight : this.collapsedHeight
+        const target = Math.min(this.expandedHeight, base + absdy * 0.5) // 增加阻尼
+        this.sheetHeight = target
+        this.maxHeight = Math.max(200, this.sheetHeight - this.chromePx - (this.safeBottom || 0))
+        this.translateY = 0
       } else {
-        // 未超过阈值，回弹到原位置
-        this.resetDrawerPosition()
+        // 向下拖拽
+        if (this.expanded) {
+          // 展开态：先收缩高度
+          const heightDiff = this.expandedHeight - this.collapsedHeight
+          if (deltaY <= heightDiff) {
+            // 还在收缩阶段
+            this.sheetHeight = this.expandedHeight - deltaY
+            this.maxHeight = Math.max(200, this.sheetHeight - this.chromePx - (this.safeBottom || 0))
+            this.translateY = 0
+          } else {
+            // 收缩完成，开始位移
+            this.sheetHeight = this.collapsedHeight
+            this.maxHeight = Math.max(200, this.sheetHeight - this.chromePx - (this.safeBottom || 0))
+            this.translateY = deltaY - heightDiff
+          }
+        } else {
+          // 折叠态：直接位移
+          this.translateY = deltaY
+        }
+        this.maskOpacity = 1 - Math.min(this.translateY / 400, 0.8)
+      }
+    },
+    
+    onDragEnd(e) {
+      if (!this.isDragging) return
+      this.isDragging = false
+      
+      // 如果没有真正激活拖拽（只是点击），不做任何处理
+      if (!this.dragActivated) {
+        return
       }
       
-      this.isDragging = false
-    },
-    // 重置弹窗位置
-    resetDrawerPosition() {
-      const drawer = this.$refs.drawer || document.querySelector('.drawer')
-      if (drawer) {
-        drawer.style.transform = ''
-        drawer.style.opacity = ''
+      const deltaY = this.lastY - this.dragStartY
+      const v = this.velocity // px/s
+      
+      // 基于速度和位置判断意图
+      if (deltaY < 0) {
+        // 向上：判断是否展开
+        const shouldExpand = this.sheetHeight > (this.collapsedHeight + this.expandedHeight) / 2 || v < -500
+        if (shouldExpand) {
+          this.expandToFull()
+        } else {
+          this.collapseToMedium()
+        }
+      } else {
+        // 向下
+        if (this.translateY > 0) {
+          // 已经有位移：判断是否关闭
+          const shouldClose = this.translateY > this.collapsedHeight * 0.25 || v > 800
+          if (shouldClose) {
+            this.close()
+          } else {
+            // 回弹到折叠态
+            this.transition = 'transform 0.24s cubic-bezier(.21,1,.34,1)'
+            this.translateY = 0
+            this.maskOpacity = 1
+            if (this.sheetHeight < this.collapsedHeight) {
+              this.collapseToMedium()
+            }
+          }
+        } else {
+          // 只有高度变化：判断停在哪档
+          if (this.expanded) {
+            // 展开态下拉：更倾向于收缩到默认档
+            // 只有当高度非常接近展开高度或速度为强烈上滑时才保持展开
+            const threshold = this.expandedHeight * 0.9 // 90%以上才可能保持
+            const shouldStayExpanded = this.sheetHeight > threshold && v < 200 // 且速度不是向下
+            if (shouldStayExpanded) {
+              this.expandToFull()
+            } else {
+              this.collapseToMedium()
+            }
+          } else {
+            // 折叠态上拉：正常判断
+            const mid = (this.collapsedHeight + this.expandedHeight) / 2
+            if (this.sheetHeight > mid || v < -300) {
+              this.expandToFull()
+            } else {
+              this.collapseToMedium()
+            }
+          }
+        }
       }
-    }
+    },
+    preview(idx) {
+      if (!this.displayImages.length) return
+      uni.previewImage({ current: idx, urls: this.displayImages })
+    },
+    onShare() {
+      this.$emit('share', this.product)
+      uni.showShareMenu({ withShareTicket: true })
+    },
+    onFavorite() {
+      this.$emit('favorite', this.product)
+      // 本地立即反馈：切换按钮状态（页面会各自持久化）
+      this.favoriteActive = !this.favoriteActive
+      uni.showToast({ title: this.favoriteActive ? '已添加收藏' : '已取消收藏', icon: 'success', duration: 1200 })
+    },
+    expandToFull() {
+      this.expanded = true
+      this.transition = 'transform 0.24s cubic-bezier(.21,1,.34,1), height 0.22s cubic-bezier(.21,1,.34,1)'
+      this.sheetHeight = this.expandedHeight
+      this.maxHeight = Math.max(200, this.sheetHeight - this.chromePx - (this.safeBottom || 0))
+    },
+    collapseToMedium() {
+      this.expanded = false
+      this.transition = 'transform 0.24s cubic-bezier(.21,1,.34,1), height 0.22s cubic-bezier(.2,.6,.2,1)'
+      this.sheetHeight = this.collapsedHeight
+      this.maxHeight = Math.max(200, this.sheetHeight - this.chromePx - (this.safeBottom || 0))
+    },
+    // 读取两处可能的收藏存储，判断是否已收藏
+    determineFavoriteState() {
+      try {
+        const id = this.product?.id
+        if (!id) { this.favoriteActive = false; return }
+        const readKey = (key) => {
+          const raw = uni.getStorageSync(key)
+          if (!raw) return []
+          if (typeof raw === 'string') {
+            try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : [] } catch (e) { return [] }
+          }
+          return Array.isArray(raw) ? raw : []
+        }
+        const listA = readKey('favoriteProducts') // 分类页
+        const listB = readKey('showcase_favorites') // 展示页
+        const exists = (arr) => arr.some(p => (p && (p.id === id)))
+        this.favoriteActive = exists(listA) || exists(listB)
+      } catch (e) {
+        this.favoriteActive = false
+      }
+    },
+    // 锁定底层页面滚动
+    lockPageScroll() {
+      // H5环境
+      if (typeof document !== 'undefined') {
+        const scrollY = window.scrollY
+        document.body.style.position = 'fixed'
+        document.body.style.top = `-${scrollY}px`
+        document.body.style.width = '100%'
+        document.body.dataset.scrollY = String(scrollY)
+      }
+    },
+    // 解锁底层页面滚动
+    unlockPageScroll() {
+      // H5环境
+      if (typeof document !== 'undefined') {
+        const scrollY = Number(document.body.dataset.scrollY || 0)
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.width = ''
+        window.scrollTo(0, scrollY)
+      }
+    },
+    // 容器touchmove处理：允许内部滚动但阻止冒泡
+    onContainerTouchMove(e) {
+      // 如果是在拖拽中，阻止默认行为
+      if (this.isDragging) {
+        e.preventDefault && e.preventDefault()
+      }
+      // 始终阻止事件冒泡到外层
+      e.stopPropagation && e.stopPropagation()
+    },
+    noop() {}
   }
 }
 </script>
 
-<style>
-.mask { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 1100; }
-.drawer { position: fixed; left: 0; right: 0; bottom: -85vh; height: 85vh; background: #fff; border-top-left-radius: 20rpx; border-top-right-radius: 20rpx; z-index: 1101; box-shadow: 0 -8rpx 20rpx rgba(0,0,0,.08); transition: bottom .22s ease; }
-.drawer.show { bottom: 0; }
-.handle { width: 120rpx; height: 10rpx; border-radius: 10rpx; background: #e5e5e5; margin: 14rpx auto; }
-.sheet { height: calc(90vh - 24rpx); padding: 0 20rpx 24rpx; box-sizing: border-box; }
-.header { margin: 8rpx 4rpx 12rpx; }
-.title { font-size: 30rpx; font-weight: 600; color: #111; }
-.sub { display:block; margin-top: 6rpx; font-size: 22rpx; color: #8f8f94; }
-.gallery { display: flex; flex-direction: row; gap: 12rpx; padding: 8rpx 0 16rpx; }
-.g-img { width: 240rpx; height: 240rpx; border-radius: 12rpx; background: #f5f5f5; }
-.desc { color: #444; font-size: 24rpx; line-height: 1.6; padding: 8rpx 4rpx; }
-.p { color:#555; }
-.cta { display: flex; gap: 12rpx; padding-top: 16rpx; }
+<style scoped>
+/* Telegram 风格：transform/opacity 动画 + 顶部拖拽区 */
+.tg-container { position: fixed; inset: 0; z-index: 3000; overscroll-behavior: contain; touch-action: none; }
+.tg-mask { position: absolute; inset: 0; background: rgba(0,0,0,.45); opacity: 0; }
+.tg-sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 20rpx 20rpx 0 0; box-shadow: 0 -16rpx 80rpx rgba(0,0,0,0.18); will-change: transform; transform: translate3d(0, 100%, 0); }
+
+.tg-drag-zone { padding: 16rpx 24rpx 8rpx; user-select: none; }
+.tg-handle { width: 96rpx; height: 8rpx; background: #e5e5e7; border-radius: 999rpx; margin: 0 auto 16rpx; }
+.tg-header { display: flex; align-items: center; justify-content: space-between; }
+.tg-title-area { max-width: 70%; }
+.tg-title { display: block; font-size: 32rpx; font-weight: 700; color: #111827; line-height: 1.3; }
+.tg-sub { display: block; margin-top: 6rpx; font-size: 24rpx; color: #6b7280; }
+.tg-actions { display: flex; align-items: center; gap: 12rpx; }
+.tg-action-btn { min-width: 88rpx; height: 56rpx; padding: 0 16rpx; background: #f3f4f6; border-radius: 28rpx; display: flex; align-items: center; justify-content: center; }
+.tg-action-btn.active { background: #e9e5ff; }
+.tg-action-btn.active .tg-action-text { color: #6a5acd; font-weight: 700; }
+.tg-action-btn:active { transform: scale(0.98); }
+.tg-action-text { font-size: 24rpx; color: #374151; font-weight: 600; }
+.tg-close-btn { width: 56rpx; height: 56rpx; border-radius: 50%; background: #F6F8FA; display: flex; align-items: center; justify-content: center; margin-left: 8rpx; }
+.tg-close-icon { font-size: 40rpx; color: #6b7280; line-height: 1; }
+
+.tg-content { padding: 0 24rpx 16rpx; touch-action: pan-y; }
+.tg-image-list { display: flex; flex-direction: column; gap: 12rpx; margin: 8rpx 0 16rpx; }
+.tg-image { width: 100%; height: 420rpx; border-radius: 20rpx; background: #f3f4f6; overflow: hidden; }
+/* 确保外层固定高度生效 */
+.tg-sheet { overflow: hidden; }
+.tg-desc { margin: 8rpx 0 16rpx; }
+.tg-desc-text { font-size: 26rpx; color: #374151; line-height: 1.6; }
+.tg-cta { display: flex; gap: 12rpx; padding-top: 16rpx; }
 .btn { flex: 1; background: #f7f7f7; color: #333; border-radius: 12rpx; padding: 14rpx 0; font-size: 28rpx; display: flex; align-items: center; justify-content: center; }
 .btn.primary { background: #1677ff; color: #fff; }
 .btn.favorite { background: #ff4757; color: #fff; }
 .favorite-icon { font-size: 32rpx; margin-right: 8rpx; }
+.tg-safe { height: env(safe-area-inset-bottom); }
 </style>

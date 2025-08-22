@@ -70,8 +70,17 @@
     />
 
     <!-- Linear 风格收藏夹抽屉 -->
-    <view v-if="showFavorites" class="linear-favorite-mask" @tap="hideFavoriteDrawer" />
-    <view class="linear-favorite-drawer" :class="{ 'linear-favorite-drawer--show': showFavorites }">
+    <view v-if="showFavorites" 
+          class="linear-favorite-mask" 
+          @tap="hideFavoriteDrawer"
+          @touchstart="onFavoriteStart"
+          @touchmove="onFavoriteMove" 
+          @touchend="onFavoriteEnd" />
+    <view class="linear-favorite-drawer" 
+          :class="{ 'linear-favorite-drawer--show': showFavorites }"
+          @touchstart="onFavoriteStart"
+          @touchmove="onFavoriteMove" 
+          @touchend="onFavoriteEnd">
       <view class="linear-favorite-header">
         <text class="linear-favorite-title">我的收藏</text>
         <view class="linear-close-btn" @tap="hideFavoriteDrawer">
@@ -131,7 +140,12 @@ export default {
       headerVisible: true,
       lastScrollTop: 0,
       scrollDirection: 'up',
-      scrollVelocity: 0
+      scrollVelocity: 0,
+      // 收藏夹手势相关
+      favoriteDragging: false,
+      favoriteStartX: 0,
+      favoriteStartY: 0,
+      dragStartTime: 0
     }
   },
   computed: {
@@ -235,6 +249,45 @@ export default {
       }
       
       this.lastScrollTop = scrollTop
+    },
+    // 收藏夹右滑关闭手势 - iOS标准手势
+    onFavoriteStart(e) {
+      const startX = e.touches[0].clientX
+      const startY = e.touches[0].clientY
+      
+      // iOS标准：从左边缘20px内开始才触发
+      if (startX < 20 || this.showFavorites) {
+        this.favoriteDragging = true
+        this.favoriteStartX = startX
+        this.favoriteStartY = startY
+        this.dragStartTime = Date.now()
+      }
+    },
+    onFavoriteMove(e) {
+      if (!this.favoriteDragging) return
+      
+      const currentX = e.touches[0].clientX
+      const currentY = e.touches[0].clientY
+      const deltaX = currentX - this.favoriteStartX
+      const deltaY = Math.abs(currentY - this.favoriteStartY)
+      
+      // 判断是否为水平滑动（水平距离大于垂直距离）
+      if (deltaX > deltaY) {
+        // iOS标准手势判断：
+        // 1. 滑动距离超过40px
+        // 2. 滑动速度足够（通过时间判断）
+        const timeDiff = Date.now() - this.dragStartTime
+        const velocity = deltaX / timeDiff
+        
+        if (deltaX > 40 || velocity > 0.5) {
+          // 直接关闭，不显示中间状态
+          this.hideFavoriteDrawer()
+          this.favoriteDragging = false
+        }
+      }
+    },
+    onFavoriteEnd(e) {
+      this.favoriteDragging = false
     }
   }
 }
