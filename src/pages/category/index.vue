@@ -31,6 +31,7 @@
                 class="search-input"
                 type="text"
                 placeholder="搜索你想要的商品..."
+                placeholder-style="color: rgba(255, 255, 255, 0.7); font-weight: 400;"
                 v-model="searchKeyword"
                 @input="onSearchInput"
                 @confirm="onSearchConfirm"
@@ -689,16 +690,15 @@ export default {
     0 8rpx 32rpx rgba(0, 0, 0, 0.12),
     inset 0 1rpx 0 rgba(255, 255, 255, 0.3),
     inset 0 -1rpx 0 rgba(255, 255, 255, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
 }
 
 .favorite-btn:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.3);
   box-shadow: 
-    0 4rpx 16rpx rgba(0, 0, 0, 0.15),
-    inset 0 1rpx 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1rpx 0 rgba(255, 255, 255, 0.15);
+    0 4rpx 16rpx rgba(0, 0, 0, 0.08),
+    inset 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
 }
 
 .favorite-icon-wrapper {
@@ -831,8 +831,21 @@ export default {
   border: none;
   outline: none;
   font-size: 28rpx;
-  color: var(--linear-text-inverse);
-  placeholder-color: rgba(255, 255, 255, 0.7);
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+/* 占位符文字样式 */
+.search-input::-webkit-input-placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+  opacity: 1;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+  opacity: 1;
 }
 
 .search-icon {
@@ -971,8 +984,9 @@ export default {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  z-index: 1999; /* 提高z-index，覆盖导航栏(z-index: 1000) */
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .linear-favorite-drawer {
@@ -982,7 +996,7 @@ export default {
   width: 600rpx;
   height: 100vh;
   background: var(--linear-bg-primary);
-  z-index: 1001;
+  z-index: 2000; /* 提高z-index，保证在遮罩层之上 */
   transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--linear-shadow-lg);
   display: flex;

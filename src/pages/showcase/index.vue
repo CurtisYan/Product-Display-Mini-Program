@@ -31,6 +31,7 @@
                 class="search-input"
                 type="text"
                 placeholder="搜索你想要的产品..."
+                placeholder-style="color: rgba(255, 255, 255, 0.7); font-weight: 400;"
                 v-model="searchKeyword"
                 @input="onSearchInput"
                 @confirm="onSearchConfirm"
@@ -475,6 +476,7 @@ export default {
   outline: none;
   font-size: 28rpx;
   color: var(--linear-text-inverse);
+  font-weight: 500;
   placeholder-color: rgba(255, 255, 255, 0.7);
 }
 
