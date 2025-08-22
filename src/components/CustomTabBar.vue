@@ -113,69 +113,79 @@ export default {
 /* Linear 风格导航栏 */
 .linear-tabbar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: -2rpx; /* 稍微下移，确保底部无缝 */
+  left: -2rpx; /* 稍微左移 */
+  right: -2rpx; /* 稍微右移 */
   z-index: 1000;
-  padding: 0 16rpx;
+  /* 添加底部padding，补偿下移的距离 */
+  padding-bottom: 2rpx;
 }
 
 .tabbar-main {
   position: relative;
-  background: rgba(255, 255, 255, 0.95);
+  /* 优化背景透明度，不要太透明 */
+  background: rgba(255, 255, 255, 0.72);
+  /* 恢复70rpx圆角 */
   border-radius: 70rpx 70rpx 0 0;
   overflow: hidden;
+  /* 让导航栏延伸更宽，覆盖屏幕边缘 */
+  margin: 0;
+  min-height: 100rpx;
   
-  /* 清晰的灰色边框 */
-  border: 1rpx solid rgba(0, 0, 0, 0.2);
-  border-bottom: none;
+  /* 清晰的边框 */
+  border-top: 1rpx solid rgba(0, 0, 0, 0.15);
   
-  /* 精细阴影 */
+  /* 优化阴影 */
   box-shadow: 
-    0 -8rpx 32rpx rgba(0, 0, 0, 0.06),
-    0 -2rpx 8rpx rgba(0, 0, 0, 0.04);
+    0 -12rpx 40rpx rgba(0, 0, 0, 0.08),
+    0 -4rpx 12rpx rgba(0, 0, 0, 0.05);
 }
 
-/* 主毛玻璃层 - 中心区域完整效果 */
-/* 毛玻璃效果 - 单层优化 */
+/* 主毛玻璃效果层 */
 .tabbar-main::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  /* 让毛玻璃效果延伸出去，避免边缘缝隙 */
+  left: -10rpx;
+  right: -10rpx;
+  bottom: -10rpx;
+  /* 适度的毛玻璃效果 */
+  backdrop-filter: blur(16rpx) saturate(150%);
+  -webkit-backdrop-filter: blur(16rpx) saturate(150%);
+  /* 微妙的渐变叠加 */
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.25),
+    rgba(250, 250, 250, 0.35)
+  );
+  border-radius: 70rpx 70rpx 0 0;
+  pointer-events: none;
+}
+
+/* 微妙的高光效果 */
+.tabbar-main::after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  backdrop-filter: blur(12rpx) saturate(150%);
-  -webkit-backdrop-filter: blur(12rpx) saturate(150%);
-  border-radius: 70rpx 70rpx 0 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent
+  );
   pointer-events: none;
 }
 
-/* 边框容器 - 使用 border-image 实现完美渐变边框 */
-.border-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  border-radius: 60rpx 60rpx 0 0;
-  border: 1rpx solid transparent;
-  border-bottom: none;
-  border-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.1),
-    transparent 50%
-  ) 1;
-  z-index: 10;
-}
-
-/* 内容区域 */
+/* 内容区域 - 添加内边距 */
 .tab-content {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 14rpx 0 calc(12rpx + env(safe-area-inset-bottom));
+  padding: 14rpx 32rpx calc(12rpx + env(safe-area-inset-bottom)) 32rpx;
   position: relative;
   z-index: 1;
 }

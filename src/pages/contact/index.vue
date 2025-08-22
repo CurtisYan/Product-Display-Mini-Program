@@ -63,9 +63,6 @@
               <text class="contact-label">微信</text>
               <text class="contact-value wechat-link">点击添加微信</text>
             </view>
-            <view class="action-indicator">
-              <text class="arrow">→</text>
-            </view>
           </view>
         </view>
       </view>
@@ -105,7 +102,13 @@
       <view class="modal-body">
         <view class="qr-container">
           <view class="qr-code">
-            <image class="qr-image" src="/static/images/company/WeChat-Business-Card.jpeg" mode="aspectFit" />
+            <image 
+              class="qr-image" 
+              src="/static/images/company/WeChat-Business-Card.jpeg" 
+              mode="aspectFit"
+              show-menu-by-longpress="true"
+              @longpress="onImageLongPress"
+            />
           </view>
         </view>
         <text class="qr-tip">长按识别二维码或使用微信扫一扫</text>
@@ -133,6 +136,13 @@ const showQRCode = () => {
 // 隐藏二维码
 const hideQRCode = () => {
   showQRModal.value = false
+}
+
+// 长按图片事件（备用，如果 show-menu-by-longpress 不生效）
+const onImageLongPress = () => {
+  // 在微信小程序中，show-menu-by-longpress 属性会自动显示菜单
+  // 这里可以添加额外的逻辑
+  console.log('长按图片')
 }
 
 // 复制到剪贴板
@@ -402,22 +412,6 @@ export default {
   cursor: pointer;
 }
 
-.action-indicator {
-  margin-left: 12rpx;
-  opacity: 0;
-  transition: all 0.2s ease;
-}
-
-.wechat-item:hover .action-indicator {
-  opacity: 1;
-  transform: translateX(4rpx);
-}
-
-.arrow {
-  font-size: 24rpx;
-  color: var(--linear-text-tertiary);
-  font-weight: 600;
-}
 
 /* 工作时间部分 */
 .schedule-section {
@@ -458,7 +452,6 @@ export default {
   padding: 16rpx 20rpx;
   background: #F6F8FA;
   border-radius: var(--linear-radius);
-  border-left: 4rpx solid var(--linear-primary);
 }
 
 .note-text {
@@ -494,7 +487,7 @@ export default {
 .modal-content {
   background: var(--linear-bg-primary);
   border-radius: var(--linear-radius-lg);
-  width: 560rpx;
+  width: 680rpx;
   max-width: 90%;
   position: relative;
   box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.3);
@@ -548,23 +541,24 @@ export default {
 }
 
 .close-icon {
-  font-size: 24rpx;
+  font-size: 36rpx;
   color: var(--linear-text-secondary);
-  font-weight: 400;
+  font-weight: 300;
+  line-height: 1;
 }
 
 .modal-body {
-  padding: 40rpx 32rpx;
+  padding: 24rpx 20rpx;
   text-align: center;
 }
 
 .qr-container {
-  margin-bottom: 24rpx;
+  margin-bottom: 20rpx;
 }
 
 .qr-code {
-  width: 320rpx;
-  height: 320rpx;
+  width: 480rpx;
+  height: 480rpx;
   background: linear-gradient(135deg, #F6F8FA 0%, #E1E4E8 100%);
   border-radius: var(--linear-radius-lg);
   display: flex;
@@ -572,6 +566,7 @@ export default {
   align-items: center;
   justify-content: center;
   margin: 0 auto;
+  padding: 12rpx;
   border: 2rpx dashed var(--linear-border);
   position: relative;
 }
@@ -593,6 +588,8 @@ export default {
   width: 100%;
   height: 100%;
   border-radius: var(--linear-radius);
+  /* 确保图片可以被长按 */
+  pointer-events: auto;
 }
 
 .qr-tip {
