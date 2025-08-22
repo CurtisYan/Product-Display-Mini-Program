@@ -1,101 +1,111 @@
 <template>
-  <view class="contact-page">
+  <view class="linear-contact-page">
+
+
     <!-- 主要内容区域 -->
     <view class="main-content">
       <!-- 公司信息卡片 -->
-      <view class="info-card company-card">
-        <view class="card-header">
-          <view class="company-logo">
-            <text class="logo-text">XX</text>
+      <view class="linear-card company-section">
+        <view class="company-header">
+          <view class="company-avatar">
+            <image class="avatar-image" src="/static/images/company/szmeisu.jpeg" mode="aspectFill" />
           </view>
-          <view class="company-info">
-            <text class="company-name">{{ contactInfo.company }}</text>
-            <text class="company-desc">专业塑料制品解决方案提供商</text>
-          </view>
+        </view>
+        <view class="company-details">
+          <text class="company-name">{{ contactInfo.company }}</text>
+          <text class="company-tagline">专业塑料制品解决方案提供商</text>
         </view>
       </view>
 
       <!-- 联系方式卡片 -->
-      <view class="info-card contact-card">
-        <view class="card-title">
-          <text class="title-text">联系方式</text>
+      <view class="linear-card contact-section">
+        <view class="section-header">
+          <text class="section-title">联系方式</text>
+          <text class="copy-hint-text">点击可复制</text>
         </view>
         
-        <view class="contact-list">
-          <view class="contact-item">
-            <view class="contact-icon-wrapper phone">
-              <text class="contact-icon">📞</text>
+        <view class="contact-grid">
+          <view class="contact-item" hover-class="contact-item-hover" @tap="copyToClipboard(contactInfo.phone, '电话')">
+            <view class="contact-icon phone-icon">
+              <text class="icon-text">📞</text>
             </view>
-            <view class="contact-details">
+            <view class="contact-info">
               <text class="contact-label">电话</text>
               <text class="contact-value">{{ contactInfo.phone }}</text>
             </view>
           </view>
           
-          <view class="contact-item">
-            <view class="contact-icon-wrapper email">
-              <text class="contact-icon">✉️</text>
+          <view class="contact-item" hover-class="contact-item-hover" @tap="copyToClipboard(contactInfo.email, '邮箱')">
+            <view class="contact-icon email-icon">
+              <text class="icon-text">✉️</text>
             </view>
-            <view class="contact-details">
+            <view class="contact-info">
               <text class="contact-label">邮箱</text>
               <text class="contact-value">{{ contactInfo.email }}</text>
             </view>
           </view>
           
-          <view class="contact-item">
-            <view class="contact-icon-wrapper location">
-              <text class="contact-icon">📍</text>
+          <view class="contact-item" hover-class="contact-item-hover" @tap="copyToClipboard(contactInfo.address, '地址')">
+            <view class="contact-icon location-icon">
+              <text class="icon-text">📍</text>
             </view>
-            <view class="contact-details">
+            <view class="contact-info">
               <text class="contact-label">地址</text>
               <text class="contact-value">{{ contactInfo.address }}</text>
             </view>
           </view>
           
-          
-          <view class="contact-item" @tap="showQRCode">
-            <view class="contact-icon-wrapper wechat">
-              <text class="contact-icon">💬</text>
+          <view class="contact-item wechat-item" hover-class="contact-item-hover" @tap="showQRCode">
+            <view class="contact-icon wechat-icon">
+              <text class="icon-text">💬</text>
             </view>
-            <view class="contact-details">
+            <view class="contact-info">
               <text class="contact-label">微信</text>
-              <text class="contact-value wechat-value">点击添加微信</text>
+              <text class="contact-value wechat-link">点击添加微信</text>
+            </view>
+            <view class="action-indicator">
+              <text class="arrow">→</text>
             </view>
           </view>
         </view>
       </view>
 
       <!-- 工作时间卡片 -->
-      <view class="info-card time-card">
-        <view class="card-title">
-          <text class="title-text">工作时间</text>
+      <view class="linear-card schedule-section">
+        <view class="section-header">
+          <text class="section-title">工作时间</text>
         </view>
-        <view class="time-info">
-          <text class="time-text">周一至周五: 8:30 - 20:00</text>
-          <text class="time-text">周六: 9:00 - 17:00</text>
-          <text class="time-note">周日及法定节假日休息</text>
+        <view class="schedule-content">
+          <view class="schedule-item">
+            <text class="schedule-day">周一至周五</text>
+            <text class="schedule-time">8:30 - 20:00</text>
+          </view>
+          <view class="schedule-item">
+            <text class="schedule-day">周六</text>
+            <text class="schedule-time">9:00 - 17:00</text>
+          </view>
+          <view class="schedule-note">
+            <text class="note-text">周日及法定节假日休息</text>
+          </view>
         </view>
       </view>
     </view>
-
-
   </view>
 
-  <!-- 二维码弹窗 -->
-  <view v-if="showQRModal" class="qr-modal" @tap="hideQRCode">
-    <view class="qr-content" @tap.stop>
-      <view class="qr-header">
-        <text class="qr-title">添加我微信</text>
-        <view class="close-btn" @tap="hideQRCode">
-          <text class="close-icon">✕</text>
+  <!-- Linear 风格二维码弹窗 -->
+  <view v-if="showQRModal" class="linear-modal" @tap="hideQRCode">
+    <view class="modal-backdrop"></view>
+    <view class="modal-content" @tap.stop>
+      <view class="modal-header">
+        <text class="modal-title">添加微信</text>
+        <view class="close-button" @tap="hideQRCode">
+          <text class="close-icon">×</text>
         </view>
       </view>
-      <view class="qr-body">
-        <view class="qr-code-wrapper">
-          <!-- 这里可以放置真实的二维码图片 -->
-          <view class="qr-placeholder">
-            <text class="qr-placeholder-text">微信二维码</text>
-            <text class="qr-placeholder-desc">请使用微信扫一扫</text>
+      <view class="modal-body">
+        <view class="qr-container">
+          <view class="qr-code">
+            <image class="qr-image" src="/static/images/company/WeChat-Business-Card.jpeg" mode="aspectFit" />
           </view>
         </view>
         <text class="qr-tip">长按识别二维码或使用微信扫一扫</text>
@@ -124,6 +134,27 @@ const showQRCode = () => {
 const hideQRCode = () => {
   showQRModal.value = false
 }
+
+// 复制到剪贴板
+const copyToClipboard = (text, type) => {
+  uni.setClipboardData({
+    data: text,
+    success: () => {
+      uni.showToast({
+        title: `${type}已复制`,
+        icon: 'success',
+        duration: 2000
+      })
+    },
+    fail: () => {
+      uni.showToast({
+        title: '复制失败',
+        icon: 'none',
+        duration: 2000
+      })
+    }
+  })
+}
 </script>
 
 <script>
@@ -136,11 +167,44 @@ export default {
 </script>
 
 <style scoped>
-.contact-page {
-  min-height: 100vh;
-  background: #f8fafc;
-  padding: 40rpx 32rpx 180rpx 32rpx; /* 为自定义底部导航栏留出空间 */
+/* Linear 设计系统 CSS 变量 */
+:root {
+  --linear-primary: #8B5CF6;
+  --linear-primary-dark: #7C3AED;
+  --linear-primary-light: #A78BFA;
+  --linear-secondary: #06B6D4;
+  --linear-accent: #F59E0B;
+  
+  --linear-text-primary: #0F172A;
+  --linear-text-secondary: #64748B;
+  --linear-text-tertiary: #94A3B8;
+  --linear-text-inverse: #FFFFFF;
+  
+  --linear-bg: #F8FAFC;
+  --linear-bg-primary: #FFFFFF;
+  --linear-bg-secondary: #F8FAFC;
+  --linear-bg-tertiary: #F1F5F9;
+  
+  --linear-border: #E2E8F0;
+  --linear-border-light: #F1F5F9;
+  
+  --linear-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --linear-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --linear-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  --linear-radius: 16rpx;
+  --linear-radius-lg: 24rpx;
+  --linear-radius-xl: 32rpx;
 }
+
+.linear-contact-page {
+  min-height: 100vh;
+  background: var(--linear-bg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding-bottom: 140rpx;
+}
+
+
 
 /* 顶部标题区域 */
 .header-section {
@@ -154,305 +218,386 @@ export default {
   font-size: 56rpx;
   font-weight: 700;
   color: #1a202c;
-  margin-bottom: 16rpx;
-  letter-spacing: -1rpx;
 }
 
 .page-subtitle {
-  display: block;
   font-size: 28rpx;
-  color: #718096;
-  font-weight: 400;
-  line-height: 1.6;
+  color: var(--linear-text-secondary);
+  line-height: 1.5;
 }
 
 /* 主要内容区域 */
 .main-content {
-  max-width: 640rpx;
+  max-width: 1200rpx;
   margin: 0 auto;
+  padding: 60rpx 32rpx 120rpx;
+  padding-top: calc(env(safe-area-inset-top) + 40rpx);
 }
 
-/* 信息卡片通用样式 */
-.info-card {
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 48rpx 40rpx;
+/* Linear 卡片基础样式 */
+.linear-card {
+  background: var(--linear-bg-primary);
+  border: 1rpx solid var(--linear-border);
+  border-radius: var(--linear-radius-lg);
+  margin-bottom: 24rpx;
+  box-shadow: var(--linear-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 公司信息部分 */
+.company-section {
+  padding: 48rpx;
   margin-bottom: 32rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
-  border: 1px solid #e2e8f0;
 }
 
-/* 公司信息卡片 */
-.company-card {
-  margin-bottom: 40rpx;
-}
-
-.card-header {
+.company-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
+  margin-bottom: 24rpx;
 }
 
-.company-logo {
+.company-avatar {
   width: 120rpx;
   height: 120rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 60rpx;
+  background: linear-gradient(135deg, var(--linear-primary) 0%, var(--linear-primary-dark) 100%);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(139, 92, 246, 0.3);
 }
 
-.logo-text {
-  font-size: 48rpx;
-  font-weight: 700;
-  color: #ffffff;
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
 }
 
-.company-info {
+.company-details {
   text-align: center;
 }
 
 .company-name {
-  display: block;
   font-size: 40rpx;
-  font-weight: 600;
-  color: #1a202c;
+  font-weight: 700;
+  color: var(--linear-text-primary);
   margin-bottom: 12rpx;
-  letter-spacing: 0.5rpx;
-}
-
-.company-desc {
   display: block;
-  font-size: 26rpx;
-  color: #718096;
-  font-weight: 400;
-  line-height: 1.5;
 }
 
-/* 卡片标题 */
-.card-title {
-  text-align: center;
-  margin-bottom: 40rpx;
+.company-tagline {
+  font-size: 28rpx;
+  color: var(--linear-text-secondary);
+  line-height: 1.4;
 }
 
-.title-text {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #2d3748;
-  letter-spacing: 0.5rpx;
+/* 联系方式部分 */
+.contact-section {
+  padding: 32rpx;
 }
 
-/* 联系方式列表 */
-.contact-list {
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--linear-text-primary);
+  letter-spacing: -0.3rpx;
+}
+
+.copy-hint-text {
+  font-size: 22rpx;
+  color: var(--linear-primary);
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.contact-grid {
   display: flex;
   flex-direction: column;
-  gap: 32rpx;
+  gap: 2rpx;
 }
 
 .contact-item {
   display: flex;
   align-items: center;
-  padding: 24rpx 0;
-}
-
-.contact-icon-wrapper {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 40rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 24rpx;
-  flex-shrink: 0;
-}
-
-.contact-icon-wrapper.phone {
-  background: #e6fffa;
-}
-
-.contact-icon-wrapper.email {
-  background: #fef5e7;
-}
-
-.contact-icon-wrapper.location {
-  background: #f0f9ff;
-}
-
-.contact-icon-wrapper.wechat {
-  background: #e8f5e8;
-}
-
-.contact-icon {
-  font-size: 32rpx;
-}
-
-.contact-details {
-  flex: 1;
-}
-
-.contact-label {
-  display: block;
-  font-size: 24rpx;
-  color: #718096;
-  margin-bottom: 8rpx;
-  font-weight: 500;
-}
-
-.contact-value {
-  display: block;
-  font-size: 30rpx;
-  color: #2d3748;
-  font-weight: 600;
-  letter-spacing: 0.5rpx;
-}
-
-.wechat-value {
-  color: #07c160;
+  padding: 20rpx 16rpx;
+  border-radius: var(--linear-radius);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
   cursor: pointer;
 }
 
-.wechat-icon-text {
+.contact-item-hover {
+  background: #F6F8FA;
+}
+
+
+
+.contact-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.phone-icon {
+  background: linear-gradient(135deg, #00D4FF 0%, #5B73FF 100%);
+}
+
+.email-icon {
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+}
+
+.location-icon {
+  background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+}
+
+.wechat-icon {
+  background: linear-gradient(135deg, #A8E6CF 0%, #7FCDCD 100%);
+}
+
+.icon-text {
   font-size: 28rpx;
-  font-weight: 700;
-  color: #07c160;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 }
 
-/* 工作时间卡片 */
-.time-info {
-  text-align: center;
+.contact-info {
+  flex: 1;
+  min-width: 0;
 }
 
-.time-text {
+.contact-label {
+  font-size: 24rpx;
+  color: var(--linear-text-secondary);
   display: block;
-  font-size: 28rpx;
-  color: #4a5568;
-  margin-bottom: 12rpx;
+  margin-bottom: 4rpx;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5rpx;
+}
+
+.contact-value {
+  font-size: 30rpx;
+  color: var(--linear-text-primary);
+  font-weight: 600;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.wechat-link {
+  color: var(--linear-primary);
+}
+
+.wechat-item {
+  cursor: pointer;
+}
+
+.action-indicator {
+  margin-left: 12rpx;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.wechat-item:hover .action-indicator {
+  opacity: 1;
+  transform: translateX(4rpx);
+}
+
+.arrow {
+  font-size: 24rpx;
+  color: var(--linear-text-tertiary);
+  font-weight: 600;
+}
+
+/* 工作时间部分 */
+.schedule-section {
+  padding: 32rpx;
+}
+
+.schedule-content {
+  margin-top: 24rpx;
+}
+
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #F6F8FA;
+}
+
+.schedule-item:last-of-type {
+  border-bottom: none;
+}
+
+.schedule-day {
+  font-size: 26rpx;
+  color: var(--linear-text-secondary);
   font-weight: 500;
 }
 
-.time-note {
-  display: block;
-  font-size: 24rpx;
-  color: #a0aec0;
-  margin-top: 16rpx;
-  font-style: italic;
+.schedule-time {
+  font-size: 26rpx;
+  color: var(--linear-text-primary);
+  font-weight: 600;
+  font-family: 'SF Mono', Monaco, monospace;
 }
 
+.schedule-note {
+  margin-top: 20rpx;
+  padding: 16rpx 20rpx;
+  background: #F6F8FA;
+  border-radius: var(--linear-radius);
+  border-left: 4rpx solid var(--linear-primary);
+}
 
+.note-text {
+  font-size: 24rpx;
+  color: var(--linear-text-secondary);
+  line-height: 1.5;
+}
 
-/* 二维码弹窗样式 */
-.qr-modal {
+/* Linear 风格弹窗 */
+.linear-modal {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  animation: modalFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.qr-content {
-  background: #ffffff;
-  border-radius: 24rpx;
-  width: 600rpx;
-  max-width: 90vw;
-  overflow: hidden;
-  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8rpx);
 }
 
-.qr-header {
+.modal-content {
+  background: var(--linear-bg-primary);
+  border-radius: var(--linear-radius-lg);
+  width: 560rpx;
+  max-width: 90%;
+  position: relative;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 40rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  padding: 32rpx;
+  border-bottom: 1rpx solid var(--linear-border);
 }
 
-.qr-title {
-  font-size: 36rpx;
+.modal-title {
+  font-size: 28rpx;
   font-weight: 600;
-  color: #333333;
+  color: var(--linear-text-primary);
 }
 
-.close-btn {
-  width: 60rpx;
-  height: 60rpx;
+.close-button {
+  width: 56rpx;
+  height: 56rpx;
   border-radius: 50%;
-  background: #f5f5f5;
+  background: #F6F8FA;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
+  cursor: pointer;
 }
 
-.close-btn:active {
-  background: #e8e8e8;
+.close-button:hover {
+  background: #E1E4E8;
 }
 
 .close-icon {
-  font-size: 28rpx;
-  color: #666666;
+  font-size: 24rpx;
+  color: var(--linear-text-secondary);
+  font-weight: 400;
 }
 
-.qr-body {
-  padding: 40rpx;
+.modal-body {
+  padding: 40rpx 32rpx;
   text-align: center;
 }
 
-.qr-code-wrapper {
-  margin-bottom: 40rpx;
+.qr-container {
+  margin-bottom: 24rpx;
 }
 
-.qr-placeholder {
-  width: 400rpx;
-  height: 400rpx;
-  margin: 0 auto;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 16rpx;
+.qr-code {
+  width: 320rpx;
+  height: 320rpx;
+  background: linear-gradient(135deg, #F6F8FA 0%, #E1E4E8 100%);
+  border-radius: var(--linear-radius-lg);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 2rpx dashed #dee2e6;
+  margin: 0 auto;
+  border: 2rpx dashed var(--linear-border);
+  position: relative;
 }
 
-.qr-placeholder-text {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #6c757d;
-  margin-bottom: 16rpx;
+.qr-code::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60rpx;
+  height: 60rpx;
+  background: var(--linear-primary);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.1;
 }
 
-.qr-placeholder-desc {
-  font-size: 24rpx;
-  color: #adb5bd;
+.qr-image {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--linear-radius);
 }
 
 .qr-tip {
-  font-size: 26rpx;
-  color: #666666;
+  font-size: 24rpx;
+  color: var(--linear-text-secondary);
   line-height: 1.5;
-}
-
-/* 响应式调整 */
-@media (max-width: 750px) {
-  .page-title {
-    font-size: 48rpx;
-  }
-  
-  .company-name {
-    font-size: 36rpx;
-  }
-  
-  .contact-value {
-    font-size: 26rpx;
-  }
 }
 </style>

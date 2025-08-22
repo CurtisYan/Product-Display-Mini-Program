@@ -1,13 +1,19 @@
 <template>
-  <view class="category-page">
-    <!-- 现代化导航栏 -->
-    <view class="modern-header">
-      <view class="header-background"></view>
+  <view class="linear-category-page">
+    <!-- Linear 风格导航栏 -->
+    <view class="linear-header">
+      <view class="header-background">
+        <view class="header-gradient"></view>
+        <view class="header-decoration">
+          <view class="decoration-circle circle-1"></view>
+          <view class="decoration-circle circle-2"></view>
+          <view class="decoration-circle circle-3"></view>
+        </view>
+      </view>
       <view class="header-content">
         <view class="header-left">
           <view class="title-container">
             <text class="page-title">产品分类</text>
-            <view class="title-decoration"></view>
           </view>
           <view class="favorite-btn" @tap="showFavoriteDrawer">
             <view class="favorite-icon-wrapper">
@@ -19,7 +25,7 @@
           </view>
         </view>
         <view class="header-search">
-          <view class="modern-search-box">
+          <view class="linear-search-box">
             <view class="search-input-wrapper">
               <input
                 class="search-input"
@@ -30,7 +36,7 @@
                 @confirm="onSearchConfirm"
               />
               <view class="search-icon" @tap="onSearchConfirm">
-                <icon type="search" size="16" color="#999" />
+                <icon type="search" size="16" color="#8B5CF6" />
               </view>
             </view>
           </view>
@@ -43,32 +49,32 @@
       <text class="loading-text">正在加载分类数据...</text>
     </view>
 
-    <!-- 主要内容区域 -->
-    <view v-else class="content-container">
-      <!-- 左侧：主分类列表 -->
-      <scroll-view class="left-categories" scroll-y>
+    <!-- Linear 风格主要内容区域 -->
+    <view v-else class="linear-content-container">
+      <!-- 左侧：Linear 风格主分类列表 -->
+      <scroll-view class="linear-left-categories" scroll-y>
         <view
           v-for="category in categories"
           :key="category.id"
-          class="category-item"
-          :class="{ 'category-item--active': category.id === activeCategory }"
+          class="linear-category-item"
+          :class="{ 'linear-category-item--active': category.id === activeCategory }"
           @tap="selectMainCategory(category.id)"
         >
-          <text class="category-name">{{ category.name }}</text>
+          <text class="linear-category-name">{{ category.name }}</text>
         </view>
       </scroll-view>
 
-      <!-- 右侧：子分类和商品展示 -->
-      <view class="right-content">
-        <!-- 子分类标签栏 -->
-        <view v-if="currentCategoryData?.children?.length && !isSearchMode" class="subcategory-tabs">
-          <scroll-view class="tabs-scroll" scroll-x>
-            <view class="tabs-container">
+      <!-- 右侧：Linear 风格子分类和商品展示 -->
+      <view class="linear-right-content">
+        <!-- Linear 风格子分类标签栏 -->
+        <view v-if="currentCategoryData?.children?.length && !isSearchMode" class="linear-subcategory-tabs">
+          <scroll-view class="linear-tabs-scroll" scroll-x>
+            <view class="linear-tabs-container">
               <text
                 v-for="sub in currentCategoryData.children"
                 :key="sub.id"
-                class="tab-item"
-                :class="{ 'tab-item--active': sub.id === activeSubcategory }"
+                class="linear-tab-item"
+                :class="{ 'linear-tab-item--active': sub.id === activeSubcategory }"
                 @tap="scrollToSubcategory(sub.id)"
               >
                 {{ sub.name }}
@@ -77,9 +83,9 @@
           </scroll-view>
         </view>
 
-        <!-- 商品展示区域 -->
+        <!-- Linear 风格商品展示区域 -->
         <scroll-view 
-          class="products-container" 
+          class="linear-products-container" 
           scroll-y 
           :scroll-into-view="scrollTarget"
           :scroll-with-animation="false"
@@ -88,33 +94,33 @@
           @scroll="onScroll"
         >
           <!-- 搜索模式 -->
-          <view v-if="isSearchMode" class="search-results-section">
-            <view class="section-title">
-              <text class="title-text">搜索结果</text>
-              <text class="product-count">({{ searchResults.length }}个商品)</text>
+          <view v-if="isSearchMode" class="linear-search-results-section">
+            <view class="linear-section-title">
+              <text class="linear-title-text">搜索结果</text>
+              <text class="linear-product-count">({{ searchResults.length }}个商品)</text>
             </view>
             <ProductGrid 
               v-if="searchResults.length" 
               :products="searchResults" 
               @select="onProductSelect" 
             />
-            <view v-else class="empty-products">
-              <text class="empty-text">未找到相关商品</text>
+            <view v-else class="linear-empty-products">
+              <text class="linear-empty-text">未找到相关商品</text>
             </view>
           </view>
           
           <!-- 正常分类模式：显示当前分类下的所有子分类和商品 -->
-          <view v-else-if="currentCategoryData" class="category-content">
+          <view v-else-if="currentCategoryData" class="linear-category-content">
             <view 
               v-for="subcategory in currentCategoryData.children" 
               :key="subcategory.id" 
-              class="subcategory-section"
+              class="linear-subcategory-section"
               :id="'subcategory-' + subcategory.id"
             >
-              <view class="section-title">
-                <view class="title-content-wrapper">
-                  <text class="title-text">{{ subcategory.name }}</text>
-                  <text class="product-count">({{ subcategory.products?.length || 0 }}个商品)</text>
+              <view class="linear-section-title">
+                <view class="linear-title-content-wrapper">
+                  <text class="linear-title-text">{{ subcategory.name }}</text>
+                  <text class="linear-product-count">({{ subcategory.products?.length || 0 }}个商品)</text>
                 </view>
               </view>
               <ProductGrid 
@@ -122,8 +128,8 @@
                 :products="subcategory.products" 
                 @select="onProductSelect" 
               />
-              <view v-else class="empty-products">
-                <text class="empty-text">暂无商品</text>
+              <view v-else class="linear-empty-products">
+                <text class="linear-empty-text">暂无商品</text>
               </view>
             </view>
           </view>
@@ -141,33 +147,33 @@
       @favorite="onProductFavorite"
     />
     
-    <!-- 收藏夹抽屉 -->
-    <view v-if="showFavorites" class="favorite-mask" @tap="hideFavoriteDrawer" />
-    <view class="favorite-drawer" :class="{ 'favorite-drawer--show': showFavorites }">
-      <view class="favorite-header">
-        <text class="favorite-title">我的收藏</text>
-        <view class="close-btn" @tap="hideFavoriteDrawer">
-          <text class="close-icon">×</text>
+    <!-- Linear 风格收藏夹抽屉 -->
+    <view v-if="showFavorites" class="linear-favorite-mask" @tap="hideFavoriteDrawer" />
+    <view class="linear-favorite-drawer" :class="{ 'linear-favorite-drawer--show': showFavorites }">
+      <view class="linear-favorite-header">
+        <text class="linear-favorite-title">我的收藏</text>
+        <view class="linear-close-btn" @tap="hideFavoriteDrawer">
+          <text class="linear-close-icon">×</text>
         </view>
       </view>
-      <scroll-view class="favorite-content" scroll-y>
-        <view v-if="favoriteProducts.length === 0" class="empty-favorites">
-          <text class="empty-text">暂无收藏商品</text>
+      <scroll-view class="linear-favorite-content" scroll-y>
+        <view v-if="favoriteProducts.length === 0" class="linear-empty-favorites">
+          <text class="linear-empty-text">暂无收藏商品</text>
         </view>
-        <view v-else class="favorite-list">
+        <view v-else class="linear-favorite-list">
           <view 
             v-for="product in favoriteProducts" 
             :key="product.id" 
-            class="favorite-item"
+            class="linear-favorite-item"
             @tap="onFavoriteProductSelect(product)"
           >
-            <image class="favorite-image" :src="product.image" mode="aspectFill" />
-            <view class="favorite-info">
-              <text class="favorite-name">{{ product.name }}</text>
-              <text class="favorite-desc">{{ product.description || product.sub || '暂无描述' }}</text>
+            <image class="linear-favorite-image" :src="product.image" mode="aspectFill" />
+            <view class="linear-favorite-info">
+              <text class="linear-favorite-name">{{ product.name }}</text>
+              <text class="linear-favorite-desc">{{ product.description || product.sub || '暂无描述' }}</text>
             </view>
-            <view class="remove-favorite" @tap.stop="removeFavorite(product)">
-              <text class="remove-icon">🗑️</text>
+            <view class="linear-remove-favorite" @tap.stop="removeFavorite(product)">
+              <text class="linear-remove-icon">🗑️</text>
             </view>
           </view>
         </view>
@@ -339,7 +345,7 @@ export default {
       const query = uni.createSelectorQuery().in(this)
       
       // 获取滚动容器的位置信息
-      query.select('.products-container').boundingClientRect(containerRect => {
+      query.select('.linear-products-container').boundingClientRect(containerRect => {
         if (!containerRect) return
         
         const visibleTitles = []
@@ -349,7 +355,7 @@ export default {
         // 遍历所有子分类，检查其标题是否在可视区域内
         this.currentCategoryData.children.forEach(subcategory => {
           // 查询分类标题的位置（而不是整个区域）
-          query.select(`#subcategory-${subcategory.id} .section-title`).boundingClientRect(titleRect => {
+          query.select(`#subcategory-${subcategory.id} .linear-section-title`).boundingClientRect(titleRect => {
             if (titleRect) {
               const titleTop = titleRect.top
               const titleBottom = titleRect.bottom
@@ -525,20 +531,58 @@ export default {
 </script>
 
 <style scoped>
-/* 页面容器 */
-.category-page {
-  height: 100vh;
-  background-color: #f5f5f5;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* 阻止页面级别滚动 */
-  /* padding-bottom: 140rpx;  移除此行，因为 CustomTabBar 是固定定位 */
+/* Linear 设计系统 CSS 变量 */
+:root {
+  --linear-primary: #8B5CF6;
+  --linear-primary-dark: #7C3AED;
+  --linear-primary-light: #A78BFA;
+  --linear-secondary: #06B6D4;
+  --linear-accent: #F59E0B;
+  
+  --linear-text-primary: #0F172A;
+  --linear-text-secondary: #64748B;
+  --linear-text-tertiary: #94A3B8;
+  --linear-text-inverse: #FFFFFF;
+  
+  --linear-bg-primary: #FFFFFF;
+  --linear-bg-secondary: #F8FAFC;
+  --linear-bg-tertiary: #F1F5F9;
+  
+  --linear-border: #E2E8F0;
+  --linear-border-light: #F1F5F9;
+  
+  --linear-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --linear-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --linear-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  --linear-radius: 16rpx;
+  --linear-radius-lg: 24rpx;
+  --linear-radius-xl: 32rpx;
 }
 
-/* 现代化导航栏 */
-.modern-header {
-  position: relative;
+/* Linear 风格页面容器 */
+.linear-category-page {
+  height: 100vh;
+  background: var(--linear-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 140rpx;
+  /* 禁止全页滚动 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Linear 风格导航栏 */
+.linear-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   padding: 20rpx 32rpx 24rpx;
+  padding-top: calc(env(safe-area-inset-top) + 20rpx);
   overflow: hidden;
 }
 
@@ -548,20 +592,62 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.95;
+  z-index: 1;
 }
 
-.header-background::after {
-  content: '';
+.header-gradient {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  background: linear-gradient(135deg, var(--linear-primary) 0%, var(--linear-primary-dark) 50%, #8B5CF6 100%);
+  opacity: 0.95;
+}
+
+.header-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+.decoration-circle {
+  position: absolute;
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  animation: float 6s ease-in-out infinite;
+}
+
+.circle-1 {
+  width: 120rpx;
+  height: 120rpx;
+  top: 20rpx;
+  right: 80rpx;
+  animation-delay: 0s;
+}
+
+.circle-2 {
+  width: 80rpx;
+  height: 80rpx;
+  top: 60rpx;
+  right: 200rpx;
+  animation-delay: 2s;
+}
+
+.circle-3 {
+  width: 60rpx;
+  height: 60rpx;
+  top: 120rpx;
+  right: 120rpx;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20rpx) rotate(180deg); }
 }
 
 .header-content {
@@ -575,7 +661,7 @@ export default {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: 24rpx;
 }
 
 .title-container {
@@ -583,46 +669,43 @@ export default {
 }
 
 .page-title {
-  font-size: 38rpx;
+  font-size: 36rpx;
   font-weight: 700;
-  color: #fff;
+  color: var(--linear-text-inverse);
   text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
-  letter-spacing: 1rpx;
-}
-
-.title-decoration {
-  position: absolute;
-  bottom: -6rpx;
-  left: 0;
-  width: 60%;
-  height: 4rpx;
-  background: linear-gradient(90deg, #fff 0%, transparent 100%);
-  border-radius: 2rpx;
 }
 
 .favorite-btn {
-  position: relative;
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  backdrop-filter: blur(20rpx) saturate(180%);
+  box-shadow: 
+    0 8rpx 32rpx rgba(0, 0, 0, 0.12),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1rpx 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.favorite-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 4rpx 16rpx rgba(0, 0, 0, 0.15),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1rpx 0 rgba(255, 255, 255, 0.15);
 }
 
 .favorite-icon-wrapper {
   position: relative;
-  width: 68rpx;
-  height: 68rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  border: 2rpx solid rgba(255, 255, 255, 0.3);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.favorite-icon-wrapper:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.3);
 }
 
 .star-icon {
@@ -636,13 +719,12 @@ export default {
   right: -8rpx;
   min-width: 32rpx;
   height: 32rpx;
-  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+  background: #ff4757;
   border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3rpx solid #fff;
-  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.4);
+  border: 2rpx solid #fff;
 }
 
 .badge-text {
@@ -652,34 +734,23 @@ export default {
   line-height: 1;
 }
 
-/* 现代化搜索框 */
 .header-search {
   flex: 1;
-  max-width: 420rpx;
   margin-left: 32rpx;
 }
 
-.modern-search-box {
-  position: relative;
+.linear-search-box {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 50rpx;
+  backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(255, 255, 255, 0.3);
 }
 
 .search-input-wrapper {
-  position: relative;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 50rpx;
   display: flex;
   align-items: center;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1rpx solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-}
-
-.search-input-wrapper:focus-within {
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.15);
-  transform: translateY(-4rpx);
+  padding: 0 24rpx;
+  height: 72rpx;
 }
 
 /* 加载状态 */
@@ -695,190 +766,205 @@ export default {
   font-size: 28rpx;
 }
 
-/* 主要内容区域 */
-.content-container {
+/* Linear 风格主要内容区域 */
+.linear-content-container {
   flex: 1;
   display: flex;
   overflow: hidden;
 }
 
-/* 左侧主分类列表 */
-.left-categories {
+/* Linear 风格左侧主分类列表 */
+.linear-left-categories {
   width: 200rpx;
-  background: #fff;
-  border-right: 1px solid #eee;
+  background: var(--linear-bg-primary);
+  border-right: 1px solid var(--linear-border-light);
 }
 
-.category-item {
+.linear-category-item {
   padding: 32rpx 24rpx;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--linear-border-light);
   text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.linear-category-item--active {
+  background: linear-gradient(135deg, var(--linear-primary) 0%, var(--linear-primary-light) 100%);
+  border-right: 4rpx solid var(--linear-primary);
+}
+
+.linear-category-item--active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+.linear-category-name {
+  font-size: 26rpx;
+  color: var(--linear-text-primary);
+  line-height: 1.4;
+  font-weight: 500;
   transition: all 0.3s ease;
 }
 
-.category-item--active {
-  background: #fff2e8;
-  border-right: 4rpx solid #ff6600;
-}
-
-.category-name {
-  font-size: 26rpx;
-  color: #333;
-  line-height: 1.4;
-}
-
-.category-item--active .category-name {
-  color: #ff6600;
+.linear-category-item--active .linear-category-name {
+  color: var(--linear-text-inverse);
   font-weight: 600;
 }
 
-/* 右侧内容区域 */
-.right-content {
+/* Linear 风格右侧内容区域 */
+.linear-right-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--linear-bg-primary);
 }
 
 .search-input {
   flex: 1;
-  padding: 18rpx 24rpx;
-  padding-right: 80rpx;
-  font-size: 28rpx;
-  color: #333;
   background: transparent;
   border: none;
   outline: none;
-  font-weight: 400;
-}
-
-.search-input::placeholder {
-  color: #999;
-  font-weight: 300;
+  font-size: 28rpx;
+  color: var(--linear-text-inverse);
+  placeholder-color: rgba(255, 255, 255, 0.7);
 }
 
 .search-icon {
-  position: absolute;
-  right: 24rpx;
-  width: 48rpx;
-  height: 48rpx;
+  margin-left: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(102, 126, 234, 0.1);
+  width: 48rpx;
+  height: 48rpx;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .search-icon:active {
   transform: scale(0.95);
-  background: rgba(102, 126, 234, 0.2);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 
 
-/* 子分类标签栏 */
-.subcategory-tabs {
-  background: #fff;
-  border-bottom: 1px solid #eee;
+/* Linear 风格子分类标签栏 */
+.linear-subcategory-tabs {
+  background: var(--linear-bg-primary);
+  border-bottom: 1px solid var(--linear-border-light);
   padding: 20rpx 0;
 }
 
-.tabs-scroll {
+.linear-tabs-scroll {
   white-space: nowrap;
 }
 
-.tabs-container {
+.linear-tabs-container {
   display: inline-flex;
   padding: 0 32rpx;
 }
 
-.tab-item {
+.linear-tab-item {
   display: inline-block;
   padding: 16rpx 32rpx;
   margin-right: 24rpx;
   font-size: 28rpx;
-  color: #666;
-  background: #f8f8f8;
-  border-radius: 32rpx;
-  transition: all 0.3s ease;
+  color: var(--linear-text-secondary);
+  background: var(--linear-bg-tertiary);
+  border-radius: var(--linear-radius-xl);
+  border: 1px solid var(--linear-border-light);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  font-weight: 500;
 }
 
-.tab-item--active {
-  background: #ff6600;
-  color: #fff;
+.linear-tab-item--active {
+  background: linear-gradient(135deg, var(--linear-primary) 0%, var(--linear-primary-dark) 100%);
+  color: var(--linear-text-inverse);
+  border-color: var(--linear-primary);
+  box-shadow: var(--linear-shadow-sm);
+  font-weight: 600;
 }
 
-/* 商品展示区域 */
-.products-container {
+/* Linear 风格商品展示区域 */
+.linear-products-container {
   flex: 1;
-  height: 0; /* 关键：设置高度为0，让flex生效 */
+  height: 0;
   box-sizing: border-box;
 }
 
-.search-results-section,
-.category-content {
-  padding: 24rpx 32rpx; /* 将内边距下放到这里 */
+.linear-search-results-section,
+.linear-category-content {
+  padding: 24rpx 32rpx;
 }
 
-.category-content {
+.linear-category-content {
   min-height: 100%;
 }
 
-.subcategory-section {
+.linear-subcategory-section {
   margin-bottom: 48rpx;
 }
 
-.section-title {
-  /* 外层容器负责定位和背景 */
+.linear-section-title {
   position: sticky;
-  top: -4rpx; /* 设置负值，让其位置上移，覆盖掉自身的边框，实现更紧密的吸顶效果 */
+  top: -4rpx;
   z-index: 10;
-  background-color: #fff; 
-  width: auto; /* 宽度自适应，配合负边距使用 */
-  border-bottom: 2rpx solid #f0f0f0;
-  
-  /* --- 核心代码：利用负边距让其宽度超越父容器 --- */
+  background: var(--linear-bg-primary);
+  width: auto;
+  border-bottom: 2rpx solid var(--linear-border-light);
   margin-left: -32rpx;
   margin-right: -32rpx;
+  box-shadow: var(--linear-shadow-sm);
 }
 
-.title-content-wrapper {
-  /* 内层容器负责内容布局和内边距 */
+.linear-title-content-wrapper {
   display: flex;
   align-items: center;
-  padding: 20rpx 32rpx; /* 补偿负边距，让文字内容对齐 */
+  padding: 20rpx 32rpx;
 }
 
-.title-text {
+.linear-title-text {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--linear-text-primary);
   margin-right: 16rpx;
 }
 
-.product-count {
+.linear-product-count {
   font-size: 24rpx;
-  color: #999;
+  color: var(--linear-text-tertiary);
+  background: var(--linear-bg-tertiary);
+  padding: 4rpx 12rpx;
+  border-radius: var(--linear-radius);
+  border: 1px solid var(--linear-border-light);
 }
 
-/* 空状态 */
-.empty-products {
+/* Linear 风格空状态 */
+.linear-empty-products {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 400rpx;
+  background: var(--linear-bg-tertiary);
+  border-radius: var(--linear-radius-lg);
+  margin: 24rpx 0;
 }
 
-.empty-text {
-  color: #ccc;
+.linear-empty-text {
+  color: var(--linear-text-tertiary);
   font-size: 28rpx;
+  font-weight: 500;
 }
 
-/* 收藏夹抽屉样式 */
-.favorite-mask {
+/* Linear 风格收藏夹抽屉样式 */
+.linear-favorite-mask {
   position: fixed;
   top: 0;
   left: 0;
@@ -886,105 +972,113 @@ export default {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
-.favorite-drawer {
+.linear-favorite-drawer {
   position: fixed;
   top: 0;
   right: -600rpx;
   width: 600rpx;
   height: 100vh;
-  background: #fff;
+  background: var(--linear-bg-primary);
   z-index: 1001;
-  transition: right 0.3s ease;
-  box-shadow: -4rpx 0 20rpx rgba(0, 0, 0, 0.1);
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--linear-shadow-lg);
   display: flex;
   flex-direction: column;
+  border-left: 1px solid var(--linear-border);
 }
 
-.favorite-drawer--show {
+.linear-favorite-drawer--show {
   right: 0;
 }
 
-.favorite-header {
+.linear-favorite-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 40rpx 32rpx 20rpx;
-  border-bottom: 1px solid #eee;
-  background: #f8f8f8;
+  border-bottom: 1px solid var(--linear-border-light);
+  background: linear-gradient(135deg, var(--linear-bg-secondary) 0%, var(--linear-bg-tertiary) 100%);
 }
 
-.favorite-title {
+.linear-favorite-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--linear-text-primary);
 }
 
-.close-btn {
+.linear-close-btn {
   width: 60rpx;
   height: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0f0f0;
+  background: var(--linear-bg-tertiary);
   border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  border: 1px solid var(--linear-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.close-btn:active {
-  background: #e0e0e0;
+.linear-close-btn:active {
+  background: var(--linear-bg-secondary);
   transform: scale(0.95);
+  box-shadow: var(--linear-shadow-sm);
 }
 
-.close-icon {
+.linear-close-icon {
   font-size: 36rpx;
-  color: #666;
+  color: var(--linear-text-secondary);
   font-weight: bold;
 }
 
-.favorite-content {
+.linear-favorite-content {
   flex: 1;
   padding: 0;
 }
 
-.empty-favorites {
+.linear-empty-favorites {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 400rpx;
-  color: #999;
+  color: var(--linear-text-tertiary);
   font-size: 28rpx;
+  background: var(--linear-bg-tertiary);
+  margin: 24rpx;
+  border-radius: var(--linear-radius-lg);
 }
 
-.favorite-list {
+.linear-favorite-list {
   padding: 20rpx 0;
 }
 
-.favorite-item {
+.linear-favorite-item {
   display: flex;
   align-items: center;
   padding: 24rpx 32rpx;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background 0.3s ease;
-  cursor: pointer;
+  border-bottom: 1px solid var(--linear-border-light);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
-.favorite-item:active {
-  background: #f8f8f8;
+.linear-favorite-item:active {
+  background: var(--linear-bg-secondary);
+  transform: translateX(-4rpx);
 }
 
-.favorite-image {
+.linear-favorite-image {
   width: 120rpx;
   height: 120rpx;
-  border-radius: 12rpx;
-  background: #f5f5f5;
+  border-radius: var(--linear-radius-lg);
+  background: var(--linear-bg-tertiary);
   margin-right: 24rpx;
   flex-shrink: 0;
+  border: 1px solid var(--linear-border-light);
 }
 
-.favorite-info {
+.linear-favorite-info {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -992,19 +1086,19 @@ export default {
   margin-right: 16rpx;
 }
 
-.favorite-name {
+.linear-favorite-name {
   font-size: 28rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--linear-text-primary);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.favorite-desc {
+.linear-favorite-desc {
   font-size: 24rpx;
-  color: #666;
+  color: var(--linear-text-secondary);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1013,26 +1107,27 @@ export default {
   -webkit-box-orient: vertical;
 }
 
-.remove-favorite {
+.linear-remove-favorite {
   width: 60rpx;
   height: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--linear-bg-tertiary);
   border-radius: 50%;
-  border: 1px solid #f0f0f0;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  border: 1px solid var(--linear-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
 
-.remove-favorite:active {
-  background: #f8f8f8;
+.linear-remove-favorite:active {
+  background: #fee2e2;
+  border-color: #fecaca;
   transform: scale(0.95);
+  box-shadow: var(--linear-shadow-sm);
 }
 
-.remove-icon {
+.linear-remove-icon {
   font-size: 24rpx;
 }
 </style>

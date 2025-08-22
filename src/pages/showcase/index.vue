@@ -1,13 +1,19 @@
 <template>
   <view class="showcase-page">
-    <!-- 现代化导航栏 -->
-    <view class="modern-header">
-      <view class="header-background"></view>
+    <!-- Linear 风格头部 -->
+    <view class="linear-header" :class="{ 'header-hidden': !headerVisible }">
+      <view class="header-background">
+        <view class="header-gradient"></view>
+        <view class="header-decoration">
+          <view class="decoration-circle circle-1"></view>
+          <view class="decoration-circle circle-2"></view>
+          <view class="decoration-circle circle-3"></view>
+        </view>
+      </view>
       <view class="header-content">
         <view class="header-left">
           <view class="title-container">
             <text class="page-title">主流产品展示</text>
-            <view class="title-decoration"></view>
           </view>
           <view class="favorite-btn" @tap="showFavoriteDrawer">
             <view class="favorite-icon-wrapper">
@@ -19,7 +25,7 @@
           </view>
         </view>
         <view class="header-search">
-          <view class="modern-search-box">
+          <view class="linear-search-box">
             <view class="search-input-wrapper">
               <input
                 class="search-input"
@@ -30,7 +36,7 @@
                 @confirm="onSearchConfirm"
               />
               <view class="search-icon" @tap="onSearchConfirm">
-                <icon type="search" size="16" color="#999" />
+                <icon type="search" size="16" color="#8B5CF6" />
               </view>
             </view>
           </view>
@@ -38,14 +44,14 @@
       </view>
     </view>
 
-    <!-- 产品展示区域 -->
-    <view class="content-wrap">
-      <view class="grid" v-if="displayProducts.length">
-        <view class="card" v-for="p in displayProducts" :key="p.id" @tap="openDetail(p)" hover-class="card-hover">
-          <image class="img" :src="p.image" mode="aspectFill" />
-          <view class="info">
-            <text class="title">{{ p.name }}</text>
-            <text class="sub" v-if="p.sub">{{ p.sub }}</text>
+    <!-- Linear 风格产品展示区域 -->
+    <view class="linear-content-wrap">
+      <view class="linear-grid" v-if="displayProducts.length">
+        <view class="linear-card" v-for="p in displayProducts" :key="p.id" @tap="openDetail(p)">
+          <image class="linear-img" :src="p.image" mode="aspectFill" />
+          <view class="linear-info">
+            <text class="linear-title">{{ p.name }}</text>
+            <text class="linear-sub" v-if="p.sub">{{ p.sub }}</text>
           </view>
         </view>
       </view>
@@ -62,33 +68,33 @@
       @favorite="onProductFavorite"
     />
 
-    <!-- 收藏夹抽屉 -->
-    <view v-if="showFavorites" class="favorite-mask" @tap="hideFavoriteDrawer" />
-    <view class="favorite-drawer" :class="{ 'favorite-drawer--show': showFavorites }">
-      <view class="favorite-header">
-        <text class="favorite-title">我的收藏</text>
-        <view class="close-btn" @tap="hideFavoriteDrawer">
-          <text class="close-icon">×</text>
+    <!-- Linear 风格收藏夹抽屉 -->
+    <view v-if="showFavorites" class="linear-favorite-mask" @tap="hideFavoriteDrawer" />
+    <view class="linear-favorite-drawer" :class="{ 'linear-favorite-drawer--show': showFavorites }">
+      <view class="linear-favorite-header">
+        <text class="linear-favorite-title">我的收藏</text>
+        <view class="linear-close-btn" @tap="hideFavoriteDrawer">
+          <text class="linear-close-icon">×</text>
         </view>
       </view>
-      <scroll-view class="favorite-content" scroll-y>
-        <view v-if="favoriteProducts.length === 0" class="empty-favorites">
-          还没有收藏任何产品
+      <scroll-view class="linear-favorite-content" scroll-y>
+        <view v-if="favoriteProducts.length === 0" class="linear-empty-favorites">
+          <text class="linear-empty-text">还没有收藏任何产品</text>
         </view>
-        <view v-else class="favorite-list">
+        <view v-else class="linear-favorite-list">
           <view 
             v-for="product in favoriteProducts" 
             :key="product.id" 
-            class="favorite-item"
+            class="linear-favorite-item"
             @tap="openDetail(product)"
           >
-            <image class="favorite-image" :src="product.image" mode="aspectFill" />
-            <view class="favorite-info">
-              <text class="favorite-name">{{ product.name }}</text>
-              <text class="favorite-desc" v-if="product.sub">{{ product.sub }}</text>
+            <image class="linear-favorite-image" :src="product.image" mode="aspectFill" />
+            <view class="linear-favorite-info">
+              <text class="linear-favorite-name">{{ product.name }}</text>
+              <text class="linear-favorite-desc" v-if="product.sub">{{ product.sub }}</text>
             </view>
-            <view class="remove-favorite" @tap.stop="removeFavorite(product.id)">
-              <text class="remove-icon">🗑️</text>
+            <view class="linear-remove-favorite" @tap.stop="removeFavorite(product.id)">
+              <text class="linear-remove-icon">🗑️</text>
             </view>
           </view>
         </view>
@@ -119,7 +125,12 @@ export default {
       searchKeyword: '',
       isSearchMode: false,
       showFavorites: false,
-      favoriteProducts: [] // 收藏的产品列表
+      favoriteProducts: [], // 收藏的产品列表
+      // 头部滚动控制
+      headerVisible: true,
+      lastScrollTop: 0,
+      scrollDirection: 'up',
+      scrollVelocity: 0
     }
   },
   computed: {
@@ -138,8 +149,10 @@ export default {
     }
   },
   created() {
-    // 从本地存储加载收藏列表
     this.loadFavorites()
+  },
+  onPageScroll(e) {
+    this.handleScroll(e.scrollTop)
   },
   methods: {
     openDetail(p) {
@@ -193,26 +206,89 @@ export default {
       } catch (e) {
         console.error('保存收藏列表失败:', e)
       }
+    },
+    // 处理滚动事件，完全模拟 YouTube/Instagram 的头部隐藏/显示逻辑
+    handleScroll(scrollTop) {
+      const scrollDiff = scrollTop - this.lastScrollTop
+      const velocity = Math.abs(scrollDiff)
+      
+      // 更新滚动方向
+      this.scrollDirection = scrollDiff > 0 ? 'down' : 'up'
+      this.scrollVelocity = velocity
+      
+      // YouTube/Instagram 精确逻辑：
+      // 1. 在顶部附近(60px内)总是显示头部
+      if (scrollTop < 60) {
+        this.headerVisible = true
+      }
+      // 2. 向下滚动：快速滚动时更敏感(5px)，慢速滚动需要15px
+      else if (this.scrollDirection === 'down') {
+        const threshold = velocity > 20 ? 5 : 15
+        if (scrollDiff > threshold) {
+          this.headerVisible = false
+        }
+      }
+      // 3. 向上滚动：任何向上滚动都立即显示(2px阈值)
+      else if (this.scrollDirection === 'up' && scrollDiff < -2) {
+        this.headerVisible = true
+      }
+      
+      this.lastScrollTop = scrollTop
     }
   }
 }
 </script>
 
 <style scoped>
-.showcase-page {
-  background: #f8f8f8;
-  min-height: 100vh;
-  padding-bottom: 140rpx; /* 为底部导航栏留出空间 */
+/* Linear 设计系统 CSS 变量 */
+:root {
+  --linear-primary: #8B5CF6;
+  --linear-primary-dark: #7C3AED;
+  --linear-primary-light: #A78BFA;
+  --linear-secondary: #06B6D4;
+  --linear-accent: #F59E0B;
+  
+  --linear-text-primary: #0F172A;
+  --linear-text-secondary: #64748B;
+  --linear-text-tertiary: #94A3B8;
+  --linear-text-inverse: #FFFFFF;
+  
+  --linear-bg-primary: #FFFFFF;
+  --linear-bg-secondary: #F8FAFC;
+  --linear-bg-tertiary: #F1F5F9;
+  
+  --linear-border: #E2E8F0;
+  --linear-border-light: #F1F5F9;
+  
+  --linear-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --linear-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --linear-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  --linear-radius: 16rpx;
+  --linear-radius-lg: 24rpx;
+  --linear-radius-xl: 32rpx;
 }
 
-/* 现代化头部样式 */
-.modern-header {
+.showcase-page {
+  background: var(--linear-bg-secondary);
+  min-height: 100vh;
+  padding-bottom: 140rpx;
+}
+
+/* Linear 风格头部 */
+.linear-header {
   position: sticky;
   top: 0;
   z-index: 100;
   padding: 20rpx 32rpx 24rpx;
   padding-top: calc(env(safe-area-inset-top) + 20rpx);
   overflow: hidden;
+  transform: translateY(0);
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.linear-header.header-hidden {
+  transform: translateY(-100%);
 }
 
 .header-background {
@@ -221,19 +297,62 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.95;
+  z-index: 1;
 }
 
-.header-background::after {
-  content: '';
+.header-gradient {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  background: linear-gradient(135deg, var(--linear-primary) 0%, var(--linear-primary-dark) 50%, #8B5CF6 100%);
+  opacity: 0.95;
+}
+
+.header-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+.decoration-circle {
+  position: absolute;
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  animation: float 6s ease-in-out infinite;
+}
+
+.circle-1 {
+  width: 120rpx;
+  height: 120rpx;
+  top: 20rpx;
+  right: 80rpx;
+  animation-delay: 0s;
+}
+
+.circle-2 {
+  width: 80rpx;
+  height: 80rpx;
+  top: 60rpx;
+  right: 200rpx;
+  animation-delay: 2s;
+}
+
+.circle-3 {
+  width: 60rpx;
+  height: 60rpx;
+  top: 120rpx;
+  right: 120rpx;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20rpx) rotate(180deg); }
 }
 
 .header-content {
@@ -277,15 +396,24 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  backdrop-filter: blur(20rpx) saturate(180%);
+  box-shadow: 
+    0 8rpx 32rpx rgba(0, 0, 0, 0.12),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1rpx 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .favorite-btn:active {
   transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 4rpx 16rpx rgba(0, 0, 0, 0.15),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1rpx 0 rgba(255, 255, 255, 0.15);
 }
 
 .favorite-icon-wrapper {
@@ -323,104 +451,104 @@ export default {
 
 .header-search {
   flex: 1;
-  max-width: 500rpx;
   margin-left: 32rpx;
 }
 
-.modern-search-box {
-  background: rgba(255, 255, 255, 0.95);
+.linear-search-box {
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 50rpx;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  border: 1rpx solid rgba(255, 255, 255, 0.3);
 }
 
 .search-input-wrapper {
   display: flex;
   align-items: center;
   padding: 0 24rpx;
-  height: 80rpx;
+  height: 72rpx;
 }
 
 .search-input {
   flex: 1;
-  font-size: 28rpx;
-  color: #333;
+  background: transparent;
   border: none;
   outline: none;
-  background: transparent;
-}
-
-.search-input::placeholder {
-  color: #999;
+  font-size: 28rpx;
+  color: var(--linear-text-inverse);
+  placeholder-color: rgba(255, 255, 255, 0.7);
 }
 
 .search-icon {
-  width: 56rpx;
-  height: 56rpx;
+  margin-left: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(102, 126, 234, 0.1);
+  width: 48rpx;
+  height: 48rpx;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   transition: all 0.3s ease;
 }
 
 .search-icon:active {
   transform: scale(0.95);
-  background: rgba(102, 126, 234, 0.2);
+  background: rgba(255, 255, 255, 0.3);
 }
 
-/* 内容区域 */
-.content-wrap {
+/* Linear 风格内容区域 */
+.linear-content-wrap {
   padding: 24rpx;
 }
 
-.grid {
+.linear-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16rpx;
+  gap: 20rpx;
 }
 
-.card {
-  background: #fff;
-  border-radius: 12rpx;
+.linear-card {
+  background: var(--linear-bg-primary);
+  border-radius: var(--linear-radius-lg);
   overflow: hidden;
-  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.04);
-  transition: all 0.3s ease;
+  border: 1px solid var(--linear-border-light);
+  box-shadow: var(--linear-shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.card-hover {
+.linear-card:active {
   transform: scale(0.98);
-  box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.08);
+  box-shadow: var(--linear-shadow);
 }
 
-.img {
+.linear-img {
   width: 100%;
-  height: 220rpx;
-  background: #f5f5f5;
+  height: 240rpx;
+  background: var(--linear-bg-tertiary);
 }
 
-.info {
-  padding: 12rpx 16rpx 16rpx;
+.linear-info {
+  padding: 20rpx;
 }
 
-.title {
-  font-size: 26rpx;
-  color: #111;
+.linear-title {
+  font-size: 28rpx;
+  color: var(--linear-text-primary);
   font-weight: 600;
   line-height: 1.4;
+  letter-spacing: -0.3rpx;
 }
 
-.sub {
+.linear-sub {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-top: 6rpx;
-  font-size: 22rpx;
-  color: #8f8f94;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--linear-text-secondary);
   line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: 0.2rpx;
 }
 
 .empty-products {
@@ -432,8 +560,8 @@ export default {
   font-size: 28rpx;
 }
 
-/* 收藏夹抽屉样式 */
-.favorite-mask {
+/* Linear 风格收藏夹抽屉样式 */
+.linear-favorite-mask {
   position: fixed;
   top: 0;
   left: 0;
@@ -441,103 +569,113 @@ export default {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
-.favorite-drawer {
+.linear-favorite-drawer {
   position: fixed;
   top: 0;
   right: -600rpx;
   width: 600rpx;
   height: 100vh;
-  background: #fff;
+  background: var(--linear-bg-primary);
   z-index: 1001;
-  transition: right 0.3s ease;
-  box-shadow: -4rpx 0 20rpx rgba(0, 0, 0, 0.1);
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--linear-shadow-lg);
   display: flex;
   flex-direction: column;
+  border-left: 1px solid var(--linear-border);
 }
 
-.favorite-drawer--show {
+.linear-favorite-drawer--show {
   right: 0;
 }
 
-.favorite-header {
+.linear-favorite-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 40rpx 32rpx 20rpx;
-  border-bottom: 1px solid #eee;
-  background: #f8f8f8;
+  border-bottom: 1px solid var(--linear-border-light);
+  background: linear-gradient(135deg, var(--linear-bg-secondary) 0%, var(--linear-bg-tertiary) 100%);
 }
 
-.favorite-title {
+.linear-favorite-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--linear-text-primary);
 }
 
-.close-btn {
+.linear-close-btn {
   width: 60rpx;
   height: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0f0f0;
+  background: var(--linear-bg-tertiary);
   border-radius: 50%;
-  transition: all 0.3s ease;
+  border: 1px solid var(--linear-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.close-btn:active {
-  background: #e0e0e0;
+.linear-close-btn:active {
+  background: var(--linear-bg-secondary);
   transform: scale(0.95);
+  box-shadow: var(--linear-shadow-sm);
 }
 
-.close-icon {
+.linear-close-icon {
   font-size: 36rpx;
-  color: #666;
+  color: var(--linear-text-secondary);
   font-weight: bold;
 }
 
-.favorite-content {
+.linear-favorite-content {
   flex: 1;
   padding: 0;
 }
 
-.empty-favorites {
+.linear-empty-favorites {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 400rpx;
-  color: #999;
+  color: var(--linear-text-tertiary);
   font-size: 28rpx;
+  background: var(--linear-bg-tertiary);
+  margin: 24rpx;
+  border-radius: var(--linear-radius-lg);
 }
 
-.favorite-list {
+.linear-favorite-list {
   padding: 20rpx 0;
 }
 
-.favorite-item {
+.linear-favorite-item {
   display: flex;
   align-items: center;
   padding: 24rpx 32rpx;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background 0.3s ease;
+  border-bottom: 1px solid var(--linear-border-light);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
-.favorite-item:active {
-  background: #f8f8f8;
+.linear-favorite-item:active {
+  background: var(--linear-bg-secondary);
+  transform: translateX(-4rpx);
 }
 
-.favorite-image {
+.linear-favorite-image {
   width: 120rpx;
   height: 120rpx;
-  border-radius: 12rpx;
-  background: #f5f5f5;
+  border-radius: var(--linear-radius-lg);
+  background: var(--linear-bg-tertiary);
   margin-right: 24rpx;
   flex-shrink: 0;
+  border: 1px solid var(--linear-border-light);
 }
 
-.favorite-info {
+.linear-favorite-info {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -545,19 +683,19 @@ export default {
   margin-right: 16rpx;
 }
 
-.favorite-name {
+.linear-favorite-name {
   font-size: 28rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--linear-text-primary);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.favorite-desc {
+.linear-favorite-desc {
   font-size: 24rpx;
-  color: #666;
+  color: var(--linear-text-secondary);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -566,25 +704,27 @@ export default {
   -webkit-box-orient: vertical;
 }
 
-.remove-favorite {
+.linear-remove-favorite {
   width: 60rpx;
   height: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--linear-bg-tertiary);
   border-radius: 50%;
-  border: 1px solid #f0f0f0;
-  transition: all 0.3s ease;
+  border: 1px solid var(--linear-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
 
-.remove-favorite:active {
-  background: #f8f8f8;
+.linear-remove-favorite:active {
+  background: #fee2e2;
+  border-color: #fecaca;
   transform: scale(0.95);
+  box-shadow: var(--linear-shadow-sm);
 }
 
-.remove-icon {
+.linear-remove-icon {
   font-size: 24rpx;
 }
 </style>
