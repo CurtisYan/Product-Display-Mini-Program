@@ -49,7 +49,16 @@
     <view class="linear-content-wrap">
       <view class="linear-grid" v-if="displayProducts.length">
         <view class="linear-card" v-for="p in displayProducts" :key="p.id" @tap="openDetail(p)">
-          <image class="linear-img" :src="p.image" mode="aspectFill" />
+          <view class="linear-img-wrapper">
+            <LazyImage 
+              :src="p.image" 
+              mode="aspectFill"
+              width="100%"
+              height="100%"
+              border-radius="12rpx 12rpx 0 0"
+              :show-spinner="false"
+            />
+          </view>
           <view class="linear-info">
             <text class="linear-title">{{ p.name }}</text>
             <text class="linear-sub" v-if="p.sub">{{ p.sub }}</text>
@@ -119,13 +128,15 @@
 <script>
 import CustomTabBar from '../../components/CustomTabBar.vue'
 import ProductDetailDrawer from '../../components/ProductDetailDrawer.vue'
+import LazyImage from '../../components/LazyImage.vue'
 import { getShowcaseProducts } from '../../shared/products.js'
 
 export default {
   name: 'ShowcasePage',
   components: {
     CustomTabBar,
-    ProductDetailDrawer
+    ProductDetailDrawer,
+    LazyImage
   },
   data() {
     return {
@@ -165,6 +176,10 @@ export default {
   },
   created() {
     this.loadFavorites()
+  },
+  onShow() {
+    // 页面显示时通知导航栏更新状态
+    uni.$emit('updateTabBar')
   },
   onPageScroll(e) {
     this.handleScroll(e.scrollTop)
@@ -575,10 +590,12 @@ export default {
   box-shadow: var(--linear-shadow);
 }
 
-.linear-img {
+.linear-img-wrapper {
   width: 100%;
   height: 240rpx;
   background: var(--linear-bg-tertiary);
+  overflow: hidden;
+  border-radius: 12rpx 12rpx 0 0;
 }
 
 .linear-info {

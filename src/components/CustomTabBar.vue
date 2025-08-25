@@ -46,8 +46,28 @@ export default {
       ]
     }
   },
-  mounted() {
+  created() {
+    // 立即更新当前状态
     this.updateCurrent()
+    
+    // 监听全局事件，用于页面通知导航栏更新
+    uni.$on('updateTabBar', () => {
+      this.updateCurrent()
+    })
+  },
+  mounted() {
+    // 组件挂载后再次确认状态
+    this.updateCurrent()
+  },
+  beforeDestroy() {
+    // 移除事件监听
+    uni.$off('updateTabBar')
+  },
+  watch: {
+    // 监听 current 变化，可用于调试
+    current(newVal, oldVal) {
+      console.log('TabBar current changed:', oldVal, '->', newVal)
+    }
   },
   methods: {
     switchTab(index) {
@@ -55,23 +75,29 @@ export default {
       
       // 添加触觉反馈
       uni.vibrateShort({
-        type: 'light'
+        type: 'light',
+        fail: () => {} // 忽略振动失败
       })
       
       this.navigating = true
       const target = this.tabs[index].pagePath
       
-      // 延迟更新状态，避免闪烁
-      setTimeout(() => {
-        this.current = index
-      }, 50)
+      // 立即更新状态
+      this.current = index
       
-      uni.redirectTo({
+      // 使用 switchTab 跳转
+      uni.switchTab({
         url: target,
+        success: () => {
+          console.log('Switched to:', target)
+        },
+        fail: (err) => {
+          console.error('Switch tab failed:', err)
+          // 失败时恢复状态
+          this.updateCurrent()
+        },
         complete: () => {
           this.navigating = false
-          // 确保状态正确
-          this.updateCurrent()
         }
       })
     },
@@ -80,7 +106,9 @@ export default {
       const pages = getCurrentPages()
       if (pages.length) {
         const currentPage = pages[pages.length - 1]
-        const route = currentPage.route
+        const route = currentPage.route || currentPage.$page?.fullPath || ''
+        
+        console.log('Current route:', route)
         
         // 更精确的路由匹配
         let index = -1
@@ -97,14 +125,6 @@ export default {
         }
       }
     }
-  },
-  
-  // 监听页面显示事件
-  onShow() {
-    // 延迟更新，避免页面切换时闪烁
-    setTimeout(() => {
-      this.updateCurrent()
-    }, 100)
   }
 }
 </script>

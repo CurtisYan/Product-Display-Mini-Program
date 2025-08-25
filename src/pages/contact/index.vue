@@ -8,7 +8,14 @@
       <view class="linear-card company-section">
         <view class="company-header">
           <view class="company-avatar">
-            <image class="avatar-image" src="/static/images/company/szmeisu.jpeg" mode="aspectFill" />
+            <LazyImage 
+              src="/static/images/company/szmeisu.jpeg" 
+              mode="aspectFill"
+              width="120rpx"
+              height="120rpx"
+              border-radius="50%"
+              :show-spinner="true"
+            />
           </view>
         </view>
         <view class="company-details">
@@ -102,12 +109,13 @@
       <view class="modal-body">
         <view class="qr-container">
           <view class="qr-code">
-            <image 
-              class="qr-image" 
+            <LazyImage 
               src="/static/images/company/WeChat-Business-Card.jpeg" 
               mode="aspectFit"
-              show-menu-by-longpress="true"
-              @longpress="onImageLongPress"
+              width="100%"
+              height="100%"
+              border-radius="16rpx"
+              :show-spinner="true"
             />
           </view>
         </view>
@@ -121,9 +129,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { contactInfo } from '../../config.js'
 import CustomTabBar from '../../components/CustomTabBar.vue'
+import LazyImage from '../../components/LazyImage.vue'
+
+// 页面显示时通知导航栏更新状态
+uni.$on('page-show-contact', () => {
+  uni.$emit('updateTabBar')
+})
 
 // 控制二维码弹窗显示
 const showQRModal = ref(false)
@@ -171,7 +185,12 @@ const copyToClipboard = (text, type) => {
 export default {
   name: 'ContactPage',
   components: {
-    CustomTabBar
+    CustomTabBar,
+    LazyImage
+  },
+  onShow() {
+    // 页面显示时通知导航栏更新状态
+    uni.$emit('updateTabBar')
   }
 }
 </script>
@@ -278,11 +297,7 @@ export default {
   box-shadow: 0 8rpx 32rpx rgba(139, 92, 246, 0.3);
 }
 
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-}
+/* 移除旧的 avatar-image 样式，由 LazyImage 组件处理 */
 
 .company-details {
   text-align: center;
@@ -587,13 +602,7 @@ export default {
   opacity: 0.1;
 }
 
-.qr-image {
-  width: 100%;
-  height: 100%;
-  border-radius: var(--linear-radius);
-  /* 确保图片可以被长按 */
-  pointer-events: auto;
-}
+/* 移除旧的 qr-image 样式，由 LazyImage 组件处理 */
 
 .qr-tip {
   font-size: 24rpx;

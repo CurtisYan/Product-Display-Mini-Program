@@ -252,6 +252,10 @@ export default {
     this.refreshCategories()
     this.loadFavorites()
   },
+  onShow() {
+    // 页面显示时通知导航栏更新状态
+    uni.$emit('updateTabBar')
+  },
   methods: {
     // 从本地缓存加载分类数据（若有），快速首屏
     loadCategoriesFromCache() {
