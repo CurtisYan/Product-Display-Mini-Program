@@ -91,21 +91,16 @@ export default {
     // 检查图片是否已经预加载
     if (imagePreloader.isPreloaded(this.src)) {
       this.isPreloaded = true
-      // 如果已预加载，快速显示
-      setTimeout(() => {
-        this.loaded = true
-      }, 50)
+      // 如果已预加载，立即显示
+      this.loaded = true
     }
   },
   methods: {
     onImageLoad() {
       if (!this.loaded) {
-        // 如果不是预加载的图片，添加延迟以显示动画
-        const delay = this.isPreloaded ? 0 : 300
-        setTimeout(() => {
-          this.loaded = true
-          this.$emit('load')
-        }, delay)
+        // 立即显示图片，不添加人为延迟
+        this.loaded = true
+        this.$emit('load')
       }
     },
     onImageError(e) {

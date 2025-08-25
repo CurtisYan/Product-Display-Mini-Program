@@ -145,6 +145,8 @@ export default {
       selectedProduct: null,
       searchKeyword: '',
       isSearchMode: false,
+      searchCache: new Map(), // 搜索结果缓存
+      searchDebounceTimer: null, // 搜索防抖定时器
       showFavorites: false,
       favoriteProducts: [], // 收藏的产品列表
       // 头部滚动控制
@@ -166,10 +168,35 @@ export default {
     },
     displayProducts() {
       if (this.isSearchMode && this.searchKeyword.trim()) {
-        return this.products.filter(p => 
-          p.name.toLowerCase().includes(this.searchKeyword.toLowerCase()) ||
-          (p.sub && p.sub.toLowerCase().includes(this.searchKeyword.toLowerCase()))
-        )
+        // 先检查缓存
+        const cacheKey = this.searchKeyword.toLowerCase()
+        if (this.searchCache.has(cacheKey)) {
+          return this.searchCache.get(cacheKey)
+        }
+        
+        // 执行搜索
+        const searchTerm = this.searchKeyword.toLowerCase()
+        const results = this.products.filter(p => {
+          const nameMatch = p.name.toLowerCase().includes(searchTerm)
+          const descMatch = p.sub && p.sub.toLowerCase().includes(searchTerm)
+          return nameMatch || descMatch
+        }).sort((a, b) => {
+          // 名称匹配优先级更高
+          const aNameMatch = a.name.toLowerCase().includes(searchTerm)
+          const bNameMatch = b.name.toLowerCase().includes(searchTerm)
+          if (aNameMatch && !bNameMatch) return -1
+          if (!aNameMatch && bNameMatch) return 1
+          return 0
+        })
+        
+        // 缓存结果（限制缓存大小）
+        if (this.searchCache.size > 50) {
+          const firstKey = this.searchCache.keys().next().value
+          this.searchCache.delete(firstKey)
+        }
+        this.searchCache.set(cacheKey, results)
+        
+        return results
       }
       return this.products
     }
@@ -190,9 +217,34 @@ export default {
       this.showProductDetail = true
     },
     onSearchInput() {
-      this.isSearchMode = this.searchKeyword.trim().length > 0
+      const hasKeyword = this.searchKeyword.trim().length > 0
+      
+      if (!hasKeyword) {
+        this.isSearchMode = false
+        // 清除防抖定时器
+        if (this.searchDebounceTimer) {
+          clearTimeout(this.searchDebounceTimer)
+          this.searchDebounceTimer = null
+        }
+        return
+      }
+      
+      // 防抖处理 - 300ms后执行搜索
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer)
+      }
+      
+      this.searchDebounceTimer = setTimeout(() => {
+        this.isSearchMode = true
+      }, 300)
     },
     onSearchConfirm() {
+      // 清除防抖定时器
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer)
+        this.searchDebounceTimer = null
+      }
+      // 立即执行搜索
       this.isSearchMode = this.searchKeyword.trim().length > 0
     },
     showFavoriteDrawer() {
@@ -231,11 +283,14 @@ export default {
       }
     },
     saveFavorites() {
-      try {
-        uni.setStorageSync('showcase_favorites', JSON.stringify(this.favoriteProducts))
-      } catch (e) {
-        console.error('保存收藏列表失败:', e)
-      }
+      // 使用异步存储，避免阻塞主线程
+      uni.setStorage({
+        key: 'showcase_favorites',
+        data: JSON.stringify(this.favoriteProducts),
+        fail: (e) => {
+          console.error('保存收藏列表失败:', e)
+        }
+      })
     },
     // 处理滚动事件，完全模拟 YouTube/Instagram 的头部隐藏/显示逻辑
     handleScroll(scrollTop) {

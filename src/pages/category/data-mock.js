@@ -40,9 +40,7 @@ function buildCategoriesWithProducts() {
 // 模拟异步获取分类数据
 export function fetchCategories() {
   return new Promise((resolve) => {
-    // 模拟网络延迟
-    setTimeout(() => {
-      resolve(buildCategoriesWithProducts())
-    }, 100)
+    // 立即返回数据，不添加人为延迟
+    resolve(buildCategoriesWithProducts())
   })
 }

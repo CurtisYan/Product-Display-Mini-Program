@@ -220,6 +220,8 @@ export default {
       searchKeyword: '',
       isSearchMode: false,
       searchResults: [],
+      searchCache: new Map(), // 搜索结果缓存
+      searchDebounceTimer: null, // 搜索防抖定时器
       
       // 商品详情相关
       showProductDetail: false,
@@ -289,8 +291,11 @@ export default {
             this.activeSubcategory = data[0].children[0].id
           }
         }
-        // 写入本地缓存
-        uni.setStorageSync('categoriesCache', { data, time: Date.now() })
+        // 写入本地缓存 - 使用异步存储
+        uni.setStorage({
+          key: 'categoriesCache',
+          data: { data, time: Date.now() }
+        })
       } catch (error) {
         console.error('刷新分类数据失败:', error)
         if (this.categories.length === 0) {
@@ -347,84 +352,35 @@ export default {
       if (this.isSearchMode) return // 搜索模式下不处理
       if (!this.currentCategoryData?.children?.length) return
       
-      // 防抖处理
+      // 防抖处理 - 增加防抖时间到200ms
       if (this.scrollTimer) {
         clearTimeout(this.scrollTimer)
       }
       
       this.scrollTimer = setTimeout(() => {
-        this.updateActiveSubcategoryByScroll()
-      }, 100)
+        this.updateActiveSubcategoryByScroll(e.detail)
+      }, 200)
     },
     
-    // 根据滚动位置更新当前高亮的子分类
-    updateActiveSubcategoryByScroll() {
+    // 根据滚动位置更新当前高亮的子分类 - 简化版本
+    updateActiveSubcategoryByScroll(scrollDetail) {
       if (!this.currentCategoryData?.children?.length) return
       
-      const query = uni.createSelectorQuery().in(this)
+      // 使用滚动事件的 scrollTop 直接计算，避免大量DOM查询
+      const scrollTop = scrollDetail.scrollTop
+      const viewHeight = scrollDetail.scrollHeight / this.currentCategoryData.children.length
       
-      // 获取滚动容器的位置信息
-      query.select('.linear-products-container').boundingClientRect(containerRect => {
-        if (!containerRect) return
-        
-        const visibleTitles = []
-        const containerTop = containerRect.top
-        const containerBottom = containerRect.bottom
-        
-        // 遍历所有子分类，检查其标题是否在可视区域内
-        this.currentCategoryData.children.forEach(subcategory => {
-          // 查询分类标题的位置（而不是整个区域）
-          query.select(`#subcategory-${subcategory.id} .linear-section-title`).boundingClientRect(titleRect => {
-            if (titleRect) {
-              const titleTop = titleRect.top
-              const titleBottom = titleRect.bottom
-              
-              // 判断标题是否在可视区域内（完全或部分可见）
-              if (titleBottom > containerTop && titleTop < containerBottom) {
-                visibleTitles.push({
-                  id: subcategory.id,
-                  top: titleTop,
-                  bottom: titleBottom,
-                  // 计算标题在容器中的相对位置（越大表示越靠下）
-                  relativePosition: titleTop - containerTop
-                })
-              }
-            }
-          })
-        })
-        
-        // 执行查询
-        query.exec(() => {
-          if (visibleTitles.length > 0) {
-            // 业内最佳实践：当有多个标题可见时，选择靠下（relativePosition最大）的那个
-            // 但如果标题已经完全滑出顶部，则选择最接近顶部的那个
-            let targetSubcategory = null
-            
-            // 过滤出在可视区域内的标题
-            const fullyVisibleTitles = visibleTitles.filter(title => 
-              title.top >= containerTop && title.bottom <= containerBottom
-            )
-            
-            if (fullyVisibleTitles.length > 0) {
-              // 如果有完全可见的标题，选择最靠下的那个
-              targetSubcategory = fullyVisibleTitles.reduce((prev, current) => 
-                current.relativePosition > prev.relativePosition ? current : prev
-              )
-            } else {
-              // 如果没有完全可见的标题，选择部分可见且最靠下的那个
-              targetSubcategory = visibleTitles.reduce((prev, current) => 
-                current.relativePosition > prev.relativePosition ? current : prev
-              )
-            }
-            
-            if (targetSubcategory && targetSubcategory.id !== this.activeSubcategory) {
-              this.activeSubcategory = targetSubcategory.id
-            }
-          }
-        })
-      })
+      // 简单计算当前应该高亮的索引
+      const estimatedIndex = Math.floor(scrollTop / viewHeight)
+      const targetIndex = Math.min(
+        Math.max(0, estimatedIndex),
+        this.currentCategoryData.children.length - 1
+      )
       
-      query.exec()
+      const targetId = this.currentCategoryData.children[targetIndex].id
+      if (targetId !== this.activeSubcategory) {
+        this.activeSubcategory = targetId
+      }
     },
     
     // 选择商品
@@ -451,14 +407,17 @@ export default {
           ...product,
           favoriteTime: Date.now()
         })
-        // 保存到本地存储
-        uni.setStorageSync('favoriteProducts', this.favoriteProducts)
+        // 保存到本地存储 - 使用异步存储
+        uni.setStorage({
+          key: 'favoriteProducts',
+          data: this.favoriteProducts
+        })
       }
     },
     
 
     
-    // 搜索输入处理
+    // 搜索输入处理 - 添加防抖
     onSearchInput(e) {
       const keyword = e.detail.value.trim()
       this.searchKeyword = keyword
@@ -466,39 +425,83 @@ export default {
       if (keyword === '') {
         this.isSearchMode = false
         this.searchResults = []
+        // 清除防抖定时器
+        if (this.searchDebounceTimer) {
+          clearTimeout(this.searchDebounceTimer)
+          this.searchDebounceTimer = null
+        }
         return
       }
       
-      // 实时搜索（可以添加防抖优化）
-      this.performSearch(keyword)
+      // 防抖处理 - 用户停止输入300ms后才执行搜索
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer)
+      }
+      
+      this.searchDebounceTimer = setTimeout(() => {
+        this.performSearch(keyword)
+      }, 300)
     },
     
-    // 搜索确认
+    // 搜索确认 - 立即执行搜索
     onSearchConfirm() {
       if (this.searchKeyword.trim()) {
+        // 清除防抖定时器
+        if (this.searchDebounceTimer) {
+          clearTimeout(this.searchDebounceTimer)
+          this.searchDebounceTimer = null
+        }
+        // 立即执行搜索
         this.performSearch(this.searchKeyword.trim())
       }
     },
     
-    // 执行搜索
+    // 执行搜索 - 添加缓存优化
     performSearch(keyword) {
       this.isSearchMode = true
+      
+      // 先检查缓存
+      const cacheKey = keyword.toLowerCase()
+      if (this.searchCache.has(cacheKey)) {
+        // 直接使用缓存的结果
+        this.searchResults = this.searchCache.get(cacheKey)
+        return
+      }
+      
+      // 执行搜索
       const results = []
+      const searchTerm = keyword.toLowerCase()
       
       // 遍历所有分类和子分类，搜索匹配的商品
       this.categories.forEach(category => {
         category.children?.forEach(subcategory => {
           subcategory.products?.forEach(product => {
-            if (product.name.toLowerCase().includes(keyword.toLowerCase())) {
+            // 同时搜索产品名称和描述
+            const nameMatch = product.name.toLowerCase().includes(searchTerm)
+            const descMatch = product.sub && product.sub.toLowerCase().includes(searchTerm)
+            
+            if (nameMatch || descMatch) {
               results.push({
                 ...product,
                 categoryName: category.name,
-                subcategoryName: subcategory.name
+                subcategoryName: subcategory.name,
+                searchRelevance: nameMatch ? 2 : 1 // 名称匹配优先级更高
               })
             }
           })
         })
       })
+      
+      // 按相关性排序
+      results.sort((a, b) => b.searchRelevance - a.searchRelevance)
+      
+      // 缓存搜索结果（限制缓存大小）
+      if (this.searchCache.size > 50) {
+        // 清除最早的缓存项
+        const firstKey = this.searchCache.keys().next().value
+        this.searchCache.delete(firstKey)
+      }
+      this.searchCache.set(cacheKey, results)
       
       this.searchResults = results
     },
@@ -525,11 +528,16 @@ export default {
       const index = this.favoriteProducts.findIndex(item => item.id === product.id)
       if (index !== -1) {
         this.favoriteProducts.splice(index, 1)
-        // 更新本地存储
-        uni.setStorageSync('favoriteProducts', this.favoriteProducts)
-        uni.showToast({
-          title: '已取消收藏',
-          icon: 'success'
+        // 更新本地存储 - 使用异步存储
+        uni.setStorage({
+          key: 'favoriteProducts',
+          data: this.favoriteProducts,
+          success: () => {
+            uni.showToast({
+              title: '已取消收藏',
+              icon: 'success'
+            })
+          }
         })
       }
     },

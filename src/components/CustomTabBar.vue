@@ -27,6 +27,7 @@ export default {
     return {
       current: 0, // 默认选中分类页面
       navigating: false,
+      updateHandler: null, // 存储事件处理函数引用
       tabs: [
         { 
           pagePath: '/pages/category/index', 
@@ -47,26 +48,24 @@ export default {
     }
   },
   created() {
-    // 立即更新当前状态
-    this.updateCurrent()
-    
-    // 监听全局事件，用于页面通知导航栏更新
-    uni.$on('updateTabBar', () => {
+    // 创建事件处理函数，保存引用以便后续移除
+    this.updateHandler = () => {
       this.updateCurrent()
-    })
-  },
-  mounted() {
-    // 组件挂载后再次确认状态
+    }
+    
+    // 移除可能存在的旧监听器，避免重复
+    uni.$off('updateTabBar', this.updateHandler)
+    // 添加新监听器
+    uni.$on('updateTabBar', this.updateHandler)
+    
+    // 初始化当前状态
     this.updateCurrent()
   },
   beforeDestroy() {
-    // 移除事件监听
-    uni.$off('updateTabBar')
-  },
-  watch: {
-    // 监听 current 变化，可用于调试
-    current(newVal, oldVal) {
-      console.log('TabBar current changed:', oldVal, '->', newVal)
+    // 使用具体的处理函数引用移除事件监听
+    if (this.updateHandler) {
+      uni.$off('updateTabBar', this.updateHandler)
+      this.updateHandler = null
     }
   },
   methods: {
@@ -88,11 +87,7 @@ export default {
       // 使用 switchTab 跳转
       uni.switchTab({
         url: target,
-        success: () => {
-          console.log('Switched to:', target)
-        },
         fail: (err) => {
-          console.error('Switch tab failed:', err)
           // 失败时恢复状态
           this.updateCurrent()
         },
@@ -108,8 +103,6 @@ export default {
         const currentPage = pages[pages.length - 1]
         const route = currentPage.route || currentPage.$page?.fullPath || ''
         
-        console.log('Current route:', route)
-        
         // 更精确的路由匹配
         let index = -1
         if (route.includes('category')) {
@@ -120,7 +113,7 @@ export default {
           index = 2
         }
         
-        if (index !== -1) {
+        if (index !== -1 && index !== this.current) {
           this.current = index
         }
       }
