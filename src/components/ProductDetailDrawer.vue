@@ -367,14 +367,59 @@ export default {
       uni.previewImage({ current: idx, urls: this.displayImages })
     },
     onShare() {
-      this.$emit('share', this.product)
-      uni.showShareMenu({ withShareTicket: true })
+      // 组件内部直接处理分享逻辑
+      try {
+        // 调用系统分享菜单
+        uni.showShareMenu({ 
+          withShareTicket: true,
+          success: () => {
+            // 分享成功后显示提示
+            uni.showToast({
+              title: `分享商品：${this.product?.name || ''}`,
+              icon: 'success'
+            })
+          }
+        })
+        
+        // 通知父组件（如果需要额外处理）
+        this.$emit('share', this.product)
+      } catch (e) {
+        console.error('分享失败:', e)
+        uni.showToast({ title: '分享功能暂不可用', icon: 'none' })
+      }
     },
     onFavorite() {
-      this.$emit('favorite', this.product)
-      // 本地立即反馈：切换按钮状态（页面会各自持久化）
-      this.favoriteActive = !this.favoriteActive
-      uni.showToast({ title: this.favoriteActive ? '已添加收藏' : '已取消收藏', icon: 'success', duration: 1200 })
+      // 组件内部直接处理收藏逻辑
+      try {
+        const favorites = uni.getStorageSync('favoriteProducts') || []
+        let favoriteList = Array.isArray(favorites) ? favorites : []
+        
+        const existIndex = favoriteList.findIndex(p => p && p.id === this.product.id)
+        
+        if (existIndex === -1) {
+          // 添加收藏
+          favoriteList.push({
+            ...this.product,
+            favoriteTime: Date.now()
+          })
+          this.favoriteActive = true
+          uni.showToast({ title: '已添加收藏', icon: 'success' })
+        } else {
+          // 取消收藏
+          favoriteList.splice(existIndex, 1)
+          this.favoriteActive = false
+          uni.showToast({ title: '已取消收藏', icon: 'success' })
+        }
+        
+        // 保存到本地存储
+        uni.setStorageSync('favoriteProducts', favoriteList)
+        
+        // 通知父组件更新（如果需要的话）
+        this.$emit('favorite', this.product, this.favoriteActive)
+      } catch (e) {
+        console.error('处理收藏失败:', e)
+        uni.showToast({ title: '操作失败', icon: 'none' })
+      }
     },
     expandToFull() {
       this.expanded = true
@@ -388,24 +433,35 @@ export default {
       this.sheetHeight = this.collapsedHeight
       this.maxHeight = Math.max(200, this.sheetHeight - this.chromePx - (this.safeBottom || 0))
     },
-    // 读取两处可能的收藏存储，判断是否已收藏
+    // 读取统一的收藏存储，判断是否已收藏
     determineFavoriteState() {
       try {
         const id = this.product?.id
         if (!id) { this.favoriteActive = false; return }
-        const readKey = (key) => {
-          const raw = uni.getStorageSync(key)
-          if (!raw) return []
-          if (typeof raw === 'string') {
-            try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : [] } catch (e) { return [] }
-          }
-          return Array.isArray(raw) ? raw : []
+        
+        // 只从统一的存储位置读取
+        const favorites = uni.getStorageSync('favoriteProducts')
+        if (!favorites) {
+          this.favoriteActive = false
+          return
         }
-        const listA = readKey('favoriteProducts') // 分类页
-        const listB = readKey('showcase_favorites') // 展示页
-        const exists = (arr) => arr.some(p => (p && (p.id === id)))
-        this.favoriteActive = exists(listA) || exists(listB)
+        
+        // 兼容不同的存储格式
+        let favoriteList = []
+        if (typeof favorites === 'string') {
+          try {
+            favoriteList = JSON.parse(favorites)
+          } catch (e) {
+            favoriteList = []
+          }
+        } else if (Array.isArray(favorites)) {
+          favoriteList = favorites
+        }
+        
+        // 检查当前商品是否在收藏列表中
+        this.favoriteActive = favoriteList.some(p => p && p.id === id)
       } catch (e) {
+        console.error('读取收藏状态失败:', e)
         this.favoriteActive = false
       }
     },

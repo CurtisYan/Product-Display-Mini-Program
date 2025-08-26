@@ -389,30 +389,17 @@ export default {
       this.showProductDetail = true
     },
     
-    // 商品分享
+    // 商品分享 - 可选，如果需要额外处理
     onProductShare(product) {
-      uni.showToast({
-        title: `分享商品：${product?.name || ''}`,
-        icon: 'success'
-      })
+      // 分享逻辑已由ProductDetailDrawer组件内部处理
+      // 这里可以添加额外的统计或者其他业务逻辑
+      console.log('分享商品:', product?.name)
     },
     
-    // 商品收藏
-    onProductFavorite(product) {
-      // 检查是否已经收藏
-      const existIndex = this.favoriteProducts.findIndex(item => item.id === product.id)
-      if (existIndex === -1) {
-        // 添加到收藏列表
-        this.favoriteProducts.push({
-          ...product,
-          favoriteTime: Date.now()
-        })
-        // 保存到本地存储 - 使用异步存储
-        uni.setStorage({
-          key: 'favoriteProducts',
-          data: this.favoriteProducts
-        })
-      }
+    // 商品收藏 - 由ProductDetailDrawer组件内部处理，这里只需要重新加载收藏列表
+    onProductFavorite(product, isFavorite) {
+      // 重新加载收藏列表以保持同步
+      this.loadFavorites()
     },
     
 
@@ -633,7 +620,7 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-bottom: 140rpx;
+  padding-bottom: 180rpx;
   /* 禁止全页滚动 */
   position: fixed;
   top: 0;
@@ -975,6 +962,7 @@ export default {
   flex: 1;
   height: 0;
   box-sizing: border-box;
+  padding-bottom: 40rpx;
 }
 
 .linear-search-results-section,
@@ -984,6 +972,7 @@ export default {
 
 .linear-category-content {
   min-height: 100%;
+  padding-bottom: 60rpx;
 }
 
 .linear-subcategory-section {
@@ -992,7 +981,7 @@ export default {
 
 .linear-section-title {
   position: sticky;
-  top: -4rpx;
+  top: 0;
   z-index: 10;
   background: var(--linear-bg-primary);
   width: auto;

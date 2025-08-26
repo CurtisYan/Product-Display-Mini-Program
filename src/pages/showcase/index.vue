@@ -75,6 +75,7 @@
       v-model="showProductDetail"
       :product="selectedProduct"
       :images="detailImages"
+      @share="onProductShare"
       @favorite="onProductFavorite"
     />
 
@@ -253,16 +254,14 @@ export default {
     hideFavoriteDrawer() {
       this.showFavorites = false
     },
-    onProductFavorite(product) {
-      const index = this.favoriteProducts.findIndex(p => p.id === product.id)
-      if (index === -1) {
-        this.favoriteProducts.push(product)
-        uni.showToast({ title: '已添加到收藏', icon: 'success' })
-      } else {
-        this.favoriteProducts.splice(index, 1)
-        uni.showToast({ title: '已取消收藏', icon: 'success' })
-      }
-      this.saveFavorites()
+    onProductShare(product) {
+      // 分享逻辑已由ProductDetailDrawer组件内部处理
+      // 这里可以添加额外的统计或者其他业务逻辑
+      console.log('分享产品:', product?.name)
+    },
+    onProductFavorite(product, isFavorite) {
+      // 由ProductDetailDrawer组件内部处理，这里只需要重新加载收藏列表
+      this.loadFavorites()
     },
     removeFavorite(productId) {
       const index = this.favoriteProducts.findIndex(p => p.id === productId)
@@ -274,9 +273,20 @@ export default {
     },
     loadFavorites() {
       try {
-        const favorites = uni.getStorageSync('showcase_favorites')
+        const favorites = uni.getStorageSync('favoriteProducts')
         if (favorites) {
-          this.favoriteProducts = JSON.parse(favorites)
+          // 兼容不同的存储格式
+          if (typeof favorites === 'string') {
+            try {
+              this.favoriteProducts = JSON.parse(favorites)
+            } catch (e) {
+              this.favoriteProducts = []
+            }
+          } else if (Array.isArray(favorites)) {
+            this.favoriteProducts = favorites
+          } else {
+            this.favoriteProducts = []
+          }
         }
       } catch (e) {
         console.error('加载收藏列表失败:', e)
@@ -285,8 +295,8 @@ export default {
     saveFavorites() {
       // 使用异步存储，避免阻塞主线程
       uni.setStorage({
-        key: 'showcase_favorites',
-        data: JSON.stringify(this.favoriteProducts),
+        key: 'favoriteProducts',
+        data: this.favoriteProducts, // 直接存储数组，不需要JSON.stringify
         fail: (e) => {
           console.error('保存收藏列表失败:', e)
         }
