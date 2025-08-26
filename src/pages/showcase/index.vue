@@ -162,7 +162,10 @@ export default {
       favoriteStartY: 0,
       dragStartTime: 0,
       // 页面参数
-      pageOptions: {}
+      pageOptions: {},
+      // 防止双击
+      isOpeningDetail: false,
+      openDetailTimer: null
     }
   },
   computed: {
@@ -251,8 +254,20 @@ export default {
   },
   methods: {
     openDetail(p) {
+      // 防止双击：如果已经在打开中或已经打开，直接返回
+      if (this.isOpeningDetail || this.showProductDetail) return
+      
+      this.isOpeningDetail = true
       this.selectedProduct = p
-      this.showProductDetail = true
+      
+      // 延迟一下再设置 showProductDetail，避免双击时的快速切换
+      setTimeout(() => {
+        this.showProductDetail = true
+        // 500ms 后才允许再次操作
+        setTimeout(() => {
+          this.isOpeningDetail = false
+        }, 500)
+      }, 50)
     },
     onSearchInput() {
       const hasKeyword = this.searchKeyword.trim().length > 0

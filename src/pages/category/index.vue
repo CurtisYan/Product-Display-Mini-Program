@@ -238,7 +238,10 @@ export default {
       favoriteDragging: false,
       favoriteStartX: 0,
       favoriteStartY: 0,
-      dragStartTime: 0
+      dragStartTime: 0,
+      // 防止双击
+      isOpeningDetail: false,
+      openDetailTimer: null
     }
   },
   computed: {
@@ -385,8 +388,20 @@ export default {
     
     // 选择商品
     onProductSelect(product) {
+      // 防止双击：如果已经在打开中或已经打开，直接返回
+      if (this.isOpeningDetail || this.showProductDetail) return
+      
+      this.isOpeningDetail = true
       this.selectedProduct = product
-      this.showProductDetail = true
+      
+      // 延迟一下再设置 showProductDetail，避免双击时的快速切换
+      setTimeout(() => {
+        this.showProductDetail = true
+        // 500ms 后才允许再次操作
+        setTimeout(() => {
+          this.isOpeningDetail = false
+        }, 500)
+      }, 50)
     },
     
     // 商品分享 - 可选，如果需要额外处理
@@ -505,9 +520,21 @@ export default {
     
     // 点击收藏夹中的商品
     onFavoriteProductSelect(product) {
+      // 防止双击：如果已经在打开中或已经打开，直接返回
+      if (this.isOpeningDetail || this.showProductDetail) return
+      
+      this.isOpeningDetail = true
       this.selectedProduct = product
-      this.showProductDetail = true
-      // 不关闭收藏夹，这样关闭详情页后可以返回收藏夹
+      
+      // 延迟一下再设置 showProductDetail，避免双击时的快速切换
+      setTimeout(() => {
+        this.showProductDetail = true
+        // 不关闭收藏夹，这样关闭详情页后可以返回收藏夹
+        // 500ms 后才允许再次操作
+        setTimeout(() => {
+          this.isOpeningDetail = false
+        }, 500)
+      }, 50)
     },
     
     // 从收藏夹移除商品
