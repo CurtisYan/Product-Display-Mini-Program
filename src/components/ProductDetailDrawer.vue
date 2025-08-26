@@ -14,7 +14,16 @@
             <text class="tg-sub" v-if="product?.sub">{{ product.sub }}</text>
           </view>
           <view class="tg-actions">
+            <!-- 微信小程序使用 button 组件实现分享 -->
+            <!-- #ifdef MP-WEIXIN -->
+            <button class="tg-share-btn" open-type="share" data-nodrag="1">
+              <text class="tg-action-text">分享</text>
+            </button>
+            <!-- #endif -->
+            <!-- 非微信环境使用普通按钮 -->
+            <!-- #ifndef MP-WEIXIN -->
             <view class="tg-action-btn" data-nodrag="1" @tap.stop="onShare"><text class="tg-action-text">分享</text></view>
+            <!-- #endif -->
             <view class="tg-action-btn" :class="{ active: favoriteActive }" data-nodrag="1" @tap.stop="onFavorite"><text class="tg-action-text">{{ favoriteActive ? '已收藏' : '收藏' }}</text></view>
           </view>
         </view>
@@ -45,14 +54,21 @@
         <view class="tg-safe" />
       </scroll-view>
     </view>
+    
+    <!-- 分享引导组件 -->
+    <ShareGuide ref="shareGuide" subtitle="分享给朋友或保存图片" />
   </view>
 </template>
 
 <script>
 import { setupPageShare, showShareMenu, saveShareRecord } from '../utils/share.js'
+import ShareGuide from './ShareGuide.vue'
 
 export default {
   name: 'ProductDetailDrawer',
+  components: {
+    ShareGuide
+  },
   emits: ['update:modelValue', 'favorite', 'share'],
   props: {
     modelValue: { type: Boolean, default: false },
@@ -400,12 +416,17 @@ export default {
         // 保存分享记录
         saveShareRecord(this.product, 'menu')
         
-        // 显示分享提示
-        uni.showToast({
-          title: '点击右上角三个点进行分享',
-          icon: 'none',
-          duration: 2000
-        })
+        // 显示可视化引导（替代 toast）
+        if (this.$refs.shareGuide) {
+          this.$refs.shareGuide.show()
+        } else {
+          // 降级方案：使用 toast
+          uni.showToast({
+            title: '点击右上角三个点进行分享',
+            icon: 'none',
+            duration: 2000
+          })
+        }
         // #endif
         
         // #ifndef MP-WEIXIN
@@ -630,6 +651,25 @@ export default {
 .tg-action-btn.active .tg-action-text { color: #6a5acd; font-weight: 700; }
 .tg-action-btn:active { transform: scale(0.98); }
 .tg-action-text { font-size: 24rpx; color: #374151; font-weight: 600; }
+/* 微信分享按钮样式 */
+.tg-share-btn { 
+  min-width: 88rpx; 
+  height: 56rpx; 
+  padding: 0 16rpx; 
+  background: #f3f4f6; 
+  border-radius: 28rpx; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  border: none;
+  margin: 0;
+  line-height: 1;
+  font-size: inherit;
+  color: inherit;
+  box-sizing: border-box;
+}
+.tg-share-btn::after { display: none; }
+.tg-share-btn:active { transform: scale(0.98); background: #e5e7eb; }
 .tg-close-btn { width: 56rpx; height: 56rpx; border-radius: 50%; background: #F6F8FA; display: flex; align-items: center; justify-content: center; margin-left: 8rpx; }
 .tg-close-icon { font-size: 40rpx; color: #6b7280; line-height: 1; }
 
