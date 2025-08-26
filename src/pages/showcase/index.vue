@@ -131,6 +131,7 @@ import CustomTabBar from '../../components/CustomTabBar.vue'
 import ProductDetailDrawer from '../../components/ProductDetailDrawer.vue'
 import LazyImage from '../../components/LazyImage.vue'
 import { getShowcaseProducts } from '../../shared/products.js'
+import { setupPageShare } from '../../utils/share.js'
 
 export default {
   name: 'ShowcasePage',
@@ -159,7 +160,9 @@ export default {
       favoriteDragging: false,
       favoriteStartX: 0,
       favoriteStartY: 0,
-      dragStartTime: 0
+      dragStartTime: 0,
+      // 页面参数
+      pageOptions: {}
     }
   },
   computed: {
@@ -208,6 +211,40 @@ export default {
   onShow() {
     // 页面显示时通知导航栏更新状态
     uni.$emit('updateTabBar')
+    // 每次页面显示时处理分享参数
+    // 放在 onShow 而不是 created，确保能正确处理
+    this.handleShareParams()
+  },
+  onLoad(options) {
+    // 保存页面参数，供后续使用
+    this.pageOptions = options || {}
+    console.log('onLoad 参数:', this.pageOptions)
+  },
+  // 微信小程序分享配置
+  onShareAppMessage() {
+    // 如果有选中的商品，分享该商品
+    if (this.selectedProduct) {
+      return setupPageShare({ product: this.selectedProduct })
+    }
+    // 否则分享页面
+    return {
+      title: '发现了一些不错的产品',
+      path: '/pages/showcase/index',
+      imageUrl: ''
+    }
+  },
+  // 分享到朋友圈
+  onShareTimeline() {
+    if (this.selectedProduct) {
+      return {
+        title: `【${this.selectedProduct.name}】${this.selectedProduct.sub || ''}`,
+        query: `productId=${this.selectedProduct.id}`,
+        imageUrl: this.selectedProduct.image || ''
+      }
+    }
+    return {
+      title: '发现了一些不错的产品'
+    }
   },
   onPageScroll(e) {
     this.handleScroll(e.scrollTop)
@@ -258,6 +295,44 @@ export default {
       // 分享逻辑已由ProductDetailDrawer组件内部处理
       // 这里可以添加额外的统计或者其他业务逻辑
       console.log('分享产品:', product?.name)
+      
+      // 更新当前选中的商品，供页面分享使用
+      this.selectedProduct = product
+    },
+    
+    // 处理分享进入的参数
+    handleShareParams() {
+      // #ifdef MP-WEIXIN
+      const pages = getCurrentPages()
+      const currentPage = pages[pages.length - 1]
+      const options = currentPage.options || {}
+      
+      console.log('页面参数:', options)
+      
+      // 如果有商品ID参数，直接打开对应商品
+      if (options.productId) {
+        // 先查找商品
+        const product = this.products.find(p => p.id == options.productId)
+        if (product) {
+          console.log('找到分享的商品:', product.name)
+          // 使用 nextTick 确保页面渲染完成后再打开
+          this.$nextTick(() => {
+            // 再延迟一点确保动画流畅
+            setTimeout(() => {
+              this.openDetail(product)
+            }, 300)
+          })
+        } else {
+          console.log('未找到商品ID:', options.productId)
+        }
+      }
+      
+      // 记录分享来源
+      if (options.from === 'share') {
+        console.log('从分享进入，商品名：', decodeURIComponent(options.productName || ''))
+        // 可以进行统计或其他操作
+      }
+      // #endif
     },
     onProductFavorite(product, isFavorite) {
       // 由ProductDetailDrawer组件内部处理，这里只需要重新加载收藏列表

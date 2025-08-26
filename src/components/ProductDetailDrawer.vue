@@ -49,6 +49,8 @@
 </template>
 
 <script>
+import { setupPageShare, showShareMenu, saveShareRecord } from '../utils/share.js'
+
 export default {
   name: 'ProductDetailDrawer',
   emits: ['update:modelValue', 'favorite', 'share'],
@@ -369,17 +371,47 @@ export default {
     onShare() {
       // 组件内部直接处理分享逻辑
       try {
-        // 调用系统分享菜单
-        uni.showShareMenu({ 
+        // #ifdef MP-WEIXIN
+        // 微信小程序：显示分享按钮
+        const shareOptions = setupPageShare({ product: this.product })
+        
+        // 调用微信分享接口
+        uni.showShareMenu({
           withShareTicket: true,
+          menus: ['shareAppMessage', 'shareTimeline'], // 分享到聊天和朋友圈
           success: () => {
-            // 分享成功后显示提示
-            uni.showToast({
-              title: `分享商品：${this.product?.name || ''}`,
-              icon: 'success'
+            console.log('显示分享菜单成功')
+            
+            // 设置分享内容
+            uni.updateShareMenu({
+              withShareTicket: true,
+              success: () => {
+                console.log('更新分享菜单成功')
+              }
             })
+          },
+          fail: (err) => {
+            console.error('显示分享菜单失败:', err)
+            // 降级方案：显示操作菜单
+            this.showShareActionSheet()
           }
         })
+        
+        // 保存分享记录
+        saveShareRecord(this.product, 'menu')
+        
+        // 显示分享提示
+        uni.showToast({
+          title: '点击右上角三个点进行分享',
+          icon: 'none',
+          duration: 2000
+        })
+        // #endif
+        
+        // #ifndef MP-WEIXIN
+        // 非微信环境：显示分享选项
+        this.showShareActionSheet()
+        // #endif
         
         // 通知父组件（如果需要额外处理）
         this.$emit('share', this.product)
@@ -387,6 +419,85 @@ export default {
         console.error('分享失败:', e)
         uni.showToast({ title: '分享功能暂不可用', icon: 'none' })
       }
+    },
+    
+    // 显示分享操作菜单
+    showShareActionSheet() {
+      const product = this.product
+      if (!product) return
+      
+      uni.showActionSheet({
+        itemList: ['分享给朋友', '生成分享海报', '复制商品信息'],
+        success: (res) => {
+          if (res.tapIndex === 0) {
+            // 分享给朋友
+            this.shareToFriend()
+          } else if (res.tapIndex === 1) {
+            // 生成海报
+            this.generatePoster()
+          } else if (res.tapIndex === 2) {
+            // 复制信息
+            this.copyProductInfo()
+          }
+        }
+      })
+    },
+    
+    // 分享给朋友
+    shareToFriend() {
+      // #ifdef MP-WEIXIN
+      uni.showToast({
+        title: '请点击右上角三个点进行分享',
+        icon: 'none'
+      })
+      // #endif
+      
+      // #ifndef MP-WEIXIN
+      const shareText = `【${this.product.name}】${this.product.sub || ''}\n查看详情：${this.getProductUrl()}`
+      uni.setClipboardData({
+        data: shareText,
+        success: () => {
+          uni.showToast({
+            title: '已复制分享内容',
+            icon: 'success'
+          })
+        }
+      })
+      // #endif
+    },
+    
+    // 生成分享海报
+    generatePoster() {
+      uni.showLoading({ title: '生成中...' })
+      
+      // 跳转到海报生成页面
+      setTimeout(() => {
+        uni.hideLoading()
+        uni.navigateTo({
+          url: `/pages/poster/index?productId=${this.product.id}&productName=${encodeURIComponent(this.product.name)}&productImage=${encodeURIComponent(this.product.image || this.product.images?.[0] || '')}`
+        })
+      }, 500)
+    },
+    
+    // 复制商品信息
+    copyProductInfo() {
+      const info = `商品名称：${this.product.name}\n${this.product.sub ? '商品描述：' + this.product.sub : ''}`
+      uni.setClipboardData({
+        data: info,
+        success: () => {
+          uni.showToast({
+            title: '已复制商品信息',
+            icon: 'success'
+          })
+          saveShareRecord(this.product, 'copy')
+        }
+      })
+    },
+    
+    // 获取商品链接
+    getProductUrl() {
+      // 这里可以返回 H5 页面链接或小程序路径
+      return `pages/showcase/index?productId=${this.product.id}`
     },
     onFavorite() {
       // 组件内部直接处理收藏逻辑
